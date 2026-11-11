@@ -15,7 +15,7 @@ export const FeatureFunnelRows: React.FC<FeatureFunnelRowsProps> = ({
   const rows = [
     {
       id: 'cards',
-      image: '/src/assets/images/funnel_two_cards_1794213932269.jpg',
+      image: '/assets/images/funnel_two_cards_1794213932269.jpg',
       alt: 'Two overlapping dark blue credit cards with silver chips',
       title: 'Find the right card for you',
       text: 'Explore your card offers in as little as 90 seconds—with no impact to your credit score.',
@@ -24,7 +24,7 @@ export const FeatureFunnelRows: React.FC<FeatureFunnelRowsProps> = ({
     },
     {
       id: 'banking',
-      image: '/src/assets/images/funnel_piggy_bank_1794213933013.jpg',
+      image: '/assets/images/funnel_piggy_bank_1794213933013.jpg',
       alt: 'Pink piggy bank with a gold coin',
       title: 'Bank with confidence',
       text: 'Enjoy no fees or minimums for checking and savings accounts.',
@@ -33,7 +33,7 @@ export const FeatureFunnelRows: React.FC<FeatureFunnelRowsProps> = ({
     },
     {
       id: 'auto',
-      image: '/src/assets/images/funnel_car_keys_1794213933095.jpg',
+      image: '/assets/images/funnel_car_keys_1794213933095.jpg',
       alt: 'Car keys with blue key fob',
       title: 'Find a car you love',
       text: 'Shop cars and pre-qualify for financing with Auto Navigator.',
@@ -89,3 +89,4 @@ export const FeatureFunnelRows: React.FC<FeatureFunnelRowsProps> = ({
     </section>
   );
 };
+

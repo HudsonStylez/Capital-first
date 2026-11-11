@@ -37,7 +37,7 @@ export const PreApprovalSimulator: React.FC<PreApprovalSimulatorProps> = ({
         fee: '$0 Annual Fee',
         apr: '0% Intro APR for 15 months; then 19.99% - 29.99%',
         matchScore: '97% Match',
-        image: '/src/assets/images/funnel_two_cards_1794213932269.jpg',
+        image: '/assets/images/funnel_two_cards_1794213932269.jpg',
       };
     }
     if (goal === 'travel' && creditTier === 'excellent') {
@@ -47,7 +47,7 @@ export const PreApprovalSimulator: React.FC<PreApprovalSimulatorProps> = ({
         fee: '$395 Annual Fee',
         apr: '19.99% - 29.99% Variable APR',
         matchScore: '98% Match',
-        image: '/src/assets/images/venture_x_card_1794203768439.jpg',
+        image: '/assets/images/venture_x_card_1794203768439.jpg',
       };
     }
     if (goal === 'build' || creditTier === 'rebuilding' || creditTier === 'fair') {
@@ -57,7 +57,7 @@ export const PreApprovalSimulator: React.FC<PreApprovalSimulatorProps> = ({
         fee: '$0 Annual Fee',
         apr: '29.99% Variable APR',
         matchScore: '95% Match',
-        image: '/src/assets/images/savor_card_1794203769130.jpg',
+        image: '/assets/images/savor_card_1794203769130.jpg',
       };
     }
     return {
@@ -66,7 +66,7 @@ export const PreApprovalSimulator: React.FC<PreApprovalSimulatorProps> = ({
       fee: '$0 Annual Fee',
       apr: '19.99% - 29.99% Variable APR',
       matchScore: '96% Match',
-      image: '/src/assets/images/savor_card_1794203769130.jpg',
+      image: '/assets/images/savor_card_1794203769130.jpg',
     };
   };
 
@@ -291,3 +291,4 @@ export const PreApprovalSimulator: React.FC<PreApprovalSimulatorProps> = ({
     </div>
   );
 };
+

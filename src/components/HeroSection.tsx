@@ -11,7 +11,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onPreApproval,
 }) => {
   const [imageError, setImageError] = useState(false);
-  const heroImagePath = '/src/assets/images/autumn_mountains_hero_1794203768706.jpg';
+  const heroImagePath = '/assets/images/autumn_mountains_hero_1794203768706.jpg';
 
   return (
     <section id="hero" className="relative w-full overflow-hidden bg-slate-50">
@@ -77,3 +77,4 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     </section>
   );
 };
+

@@ -41,7 +41,7 @@ export const CreditCardsShowcase: React.FC<CreditCardsShowcaseProps> = ({
       rewardsRate: '2X miles on all purchases; 10X on hotels & rental cars via Capital One Travel.',
       apr: '19.99% - 29.99% Variable APR',
       creditLevel: 'Excellent',
-      image: '/src/assets/images/venture_x_card_1794203768439.jpg',
+      image: '/assets/images/venture_x_card_1794203768439.jpg',
       highlight: '$300 Annual Travel Credit + Airport Lounge Access',
       perks: [
         '$300 annual credit for bookings through Capital One Travel',
@@ -59,7 +59,7 @@ export const CreditCardsShowcase: React.FC<CreditCardsShowcaseProps> = ({
       rewardsRate: '3% cash back on dining, entertainment, popular streaming services and grocery stores.',
       apr: '19.99% - 29.99% Variable APR',
       creditLevel: 'Excellent / Good',
-      image: '/src/assets/images/savor_card_1794203769130.jpg',
+      image: '/assets/images/savor_card_1794203769130.jpg',
       highlight: '3% Cash Back on Everyday Favorites',
       perks: [
         '3% cash back at grocery stores and popular streaming services',
@@ -77,7 +77,7 @@ export const CreditCardsShowcase: React.FC<CreditCardsShowcaseProps> = ({
       rewardsRate: '1.5% unlimited cash back on every purchase, every day.',
       apr: '0% Intro APR for 15 months; then 19.99% - 29.99%',
       creditLevel: 'Good to Excellent',
-      image: '/src/assets/images/funnel_two_cards_1794213932269.jpg',
+      image: '/assets/images/funnel_two_cards_1794213932269.jpg',
       highlight: '0% Intro APR for 15 Months',
       perks: [
         '0% intro APR on purchases and balance transfers for 15 months',
@@ -393,3 +393,4 @@ export const CreditCardsShowcase: React.FC<CreditCardsShowcaseProps> = ({
     </section>
   );
 };
+

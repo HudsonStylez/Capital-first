@@ -7,7 +7,7 @@ interface BusinessFinanceSectionProps {
 
 export const BusinessFinanceSection: React.FC<BusinessFinanceSectionProps> = ({ onExploreBusiness }) => {
   const [imageError, setImageError] = useState(false);
-  const businessImage = '/src/assets/images/business_retail_women_1794216493886.jpg';
+  const businessImage = '/assets/images/business_retail_women_1794216493886.jpg';
 
   return (
     <section id="business-solutions" className="w-full bg-white border-b border-slate-200/80 overflow-hidden">
@@ -62,3 +62,4 @@ export const BusinessFinanceSection: React.FC<BusinessFinanceSectionProps> = ({ 
     </section>
   );
 };
+

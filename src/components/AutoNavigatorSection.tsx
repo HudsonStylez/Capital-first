@@ -51,7 +51,7 @@ export const AutoNavigatorSection: React.FC<AutoNavigatorSectionProps> = ({ onPr
           <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm flex flex-col justify-between">
             <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-100">
               <img
-                src="/src/assets/images/auto_navigator_car_1794203770230.jpg"
+                src="/assets/images/auto_navigator_car_1794203770230.jpg"
                 alt="Modern blue SUV on scenic mountain overlook"
                 className="w-full h-full object-cover object-center"
                 referrerPolicy="no-referrer"
@@ -217,3 +217,4 @@ export const AutoNavigatorSection: React.FC<AutoNavigatorSectionProps> = ({ onPr
     </section>
   );
 };
+

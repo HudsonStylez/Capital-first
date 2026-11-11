@@ -9,7 +9,7 @@ export const MoreThanABankSection: React.FC<MoreThanABankSectionProps> = ({ onLe
   const cards = [
     {
       id: 'shopping',
-      image: '/src/assets/images/more_than_shopping_1794217356481.jpg',
+      image: '/assets/images/more_than_shopping_1794217356481.jpg',
       alt: 'Man opening a cardboard delivery box on a living room couch',
       title: 'Capital One Shopping',
       text: 'Automatically apply free coupons and save with price drop notifications.',
@@ -18,7 +18,7 @@ export const MoreThanABankSection: React.FC<MoreThanABankSectionProps> = ({ onLe
     },
     {
       id: 'cafe',
-      image: '/src/assets/images/more_than_cafe_1794217357411.jpg',
+      image: '/assets/images/more_than_cafe_1794217357411.jpg',
       alt: 'Man enjoying a coffee at a modern Capital One Cafe',
       title: 'Part bank, part café',
       text: 'Capital One Cafés are open 7 days a week with extended hours for banking.',
@@ -27,7 +27,7 @@ export const MoreThanABankSection: React.FC<MoreThanABankSectionProps> = ({ onLe
     },
     {
       id: 'travel',
-      image: '/src/assets/images/more_than_travel_1794217356740.jpg',
+      image: '/assets/images/more_than_travel_1794217356740.jpg',
       alt: 'Woman relaxing on a sun lounger beside a luxury resort pool',
       title: 'Capital One Travel',
       text: 'Earn rewards when you book a flight, hotel or car with an eligible card.',
@@ -93,3 +93,4 @@ export const MoreThanABankSection: React.FC<MoreThanABankSectionProps> = ({ onLe
     </section>
   );
 };
+

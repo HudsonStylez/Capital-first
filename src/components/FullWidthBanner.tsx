@@ -7,7 +7,7 @@ interface FullWidthBannerProps {
 
 export const FullWidthBanner: React.FC<FullWidthBannerProps> = ({ onExploreAllCards }) => {
   const [imageError, setImageError] = useState(false);
-  const bannerImagePath = '/src/assets/images/cards_floating_banner_1794213932237.jpg';
+  const bannerImagePath = '/assets/images/cards_floating_banner_1794213932237.jpg';
 
   return (
     <section className="relative w-full overflow-hidden bg-sky-100 border-b border-slate-200/80">
@@ -62,3 +62,4 @@ export const FullWidthBanner: React.FC<FullWidthBannerProps> = ({ onExploreAllCa
     </section>
   );
 };
+
