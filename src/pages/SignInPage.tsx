@@ -20,7 +20,7 @@ interface SignInPageProps {
 }
 
 export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
-  const { login, passkeyLogin, users, seedDemoAccount } = useAdminStore();
+  const { login, passkeyLogin, users } = useAdminStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -71,14 +71,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
         }
       }
     }, 1200);
-  };
-
-  const handleQuickSeed = () => {
-    const demo = seedDemoAccount();
-    setUsername(demo.username);
-    setPassword(demo.password);
-    setInfoNotice('Demo account initialized (Alex Chen). You can now sign in.');
-    setTimeout(() => setInfoNotice(null), 4000);
   };
 
   return (
@@ -282,31 +274,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
             </div>
           </form>
 
-          {/* Quick Helper for Testing Empty State & Demo Auto-Seed */}
-          {users.length === 0 && (
-            <div className="mt-5 pt-3 border-t border-dashed border-slate-200 text-center">
-              <span className="text-[11px] text-slate-400 block mb-1.5">
-                Database is currently empty (Zero Dummy Data):
-              </span>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onNavigate('/enroll')}
-                  className="px-3 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white text-xs font-bold rounded"
-                >
-                  Create New Account (/enroll)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleQuickSeed}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded flex items-center gap-1"
-                >
-                  <Sparkles className="w-3 h-3 text-amber-500" />
-                  <span>Seed Quick Test User</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Below Card Centered Links */}

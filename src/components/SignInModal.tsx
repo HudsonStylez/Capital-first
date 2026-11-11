@@ -12,8 +12,8 @@ interface SignInModalProps {
 
 export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onNavigate }) => {
   const { login } = useAdminStore();
-  const [username, setUsername] = useState('alex.capital');
-  const [password, setPassword] = useState('SecurePass2026!');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -211,18 +211,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onNav
               )}
             </button>
 
-            <div className="pt-3 border-t border-slate-100 text-center space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername('alex.capital');
-                  setPassword('SecurePass2026!');
-                }}
-                className="text-xs text-[#005C9D] hover:underline font-semibold cursor-pointer"
-              >
-                Fill with demo credentials
-              </button>
-
+            <div className="pt-3 border-t border-slate-100 text-center">
               <div className="text-xs text-slate-600">
                 Don't have an online account?{' '}
                 <button

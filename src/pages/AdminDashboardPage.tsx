@@ -90,7 +90,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     applyDefaultPasswordToAll,
     setGlobalNotification,
     clearAllData,
-    seedDemoAccount,
     deleteTransaction,
   } = useAdminStore();
 
@@ -528,17 +527,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             <button
               type="button"
               onClick={() => {
-                const demo = seedDemoAccount();
-                showToast(`Seeded ${demo.username} ($5,000 checking, $1,200 credit, 5 transactions).`);
-              }}
-              className="w-full py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-semibold rounded flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Seed Test Account</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
                 clearAllData();
                 showToast('All users, logs, and transactions reset to zero.');
               }}
@@ -623,7 +611,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 <Users className="w-10 h-10 text-slate-500 mx-auto" />
                 <h3 className="text-sm font-bold text-slate-200">Zero Dummy Data &mdash; Directory Clean</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  The system starts empty. Create an account via <code className="text-sky-300">/enroll</code> (with referral code starts at $500, without starts at $0) or click below to seed a test user.
+                  The system starts empty. Create an account via <code className="text-sky-300">/enroll</code> (with referral code starts at $500, without starts at $0).
                 </p>
                 <div className="flex justify-center gap-2 pt-2">
                   <button
@@ -632,13 +620,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     className="px-4 py-2 bg-[#005C9D] text-white text-xs font-bold rounded cursor-pointer"
                   >
                     Go to /enroll
-                  </button>
-                  <button
-                    type="button"
-                    onClick={seedDemoAccount}
-                    className="px-4 py-2 bg-slate-800 text-sky-300 text-xs font-bold rounded border border-slate-700 cursor-pointer"
-                  >
-                    Seed Test Account
                   </button>
                 </div>
               </div>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ViewportSwitcher, DeviceMode } from './components/ViewportSwitcher';
 import { AdminStoreProvider } from './store/AdminStore';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './store/queryClient';
@@ -39,7 +38,6 @@ import { ProfilePage } from './pages/ProfilePage';
 import { CheckCircle2, X } from 'lucide-react';
 
 function AppContent() {
-  const [deviceMode, setDeviceMode] = useState<DeviceMode>('mobile');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   const [isPreApprovalOpen, setIsPreApprovalOpen] = useState(false);
@@ -134,17 +132,6 @@ function AppContent() {
 
   const handleCreditWiseSignUp = () => {
     showToast('CreditWise registration initialized. 100% free with no score impact.');
-  };
-
-  const getFontSizeClass = () => {
-    switch (fontSizeLevel) {
-      case 'large':
-        return 'text-[17px]';
-      case 'xlarge':
-        return 'text-[19px]';
-      default:
-        return 'text-base';
-    }
   };
 
   // Route rendering helper
@@ -296,95 +283,66 @@ function AppContent() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-900 flex flex-col ${isHighContrast ? 'contrast-125' : ''}`}>
-      {/* Viewport Switcher Toolbar (Allows instant testing of Mobile, Tablet, and Desktop Scaling + Direct Route Jumping) */}
-      <ViewportSwitcher
-        activeMode={deviceMode}
-        onChangeMode={setDeviceMode}
-        currentPath={currentPath}
-        onNavigate={navigate}
-        onReset={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+    <div className={`min-h-screen flex flex-col ${isHighContrast ? 'contrast-125' : ''}`}>
+      <main className="flex-1 w-full">
+        {renderRouteContent()}
+      </main>
+
+      {/* Slide-Out Navigation Drawer */}
+      <SlideNavDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onOpenSignIn={() => {
+          setIsMenuOpen(false);
+          navigate('/signin');
+        }}
+        onNavigateSection={handleNavigateSection}
       />
 
-      {/* Main Container Wrapper - Scales based on selected device preview */}
-      <div className="flex-1 w-full flex justify-center items-start overflow-x-hidden bg-slate-200/60 p-0 sm:py-6">
-        <div
-          className={`transition-all duration-300 bg-white shadow-2xl relative ${getFontSizeClass()} ${
-            deviceMode === 'mobile'
-              ? 'w-full max-w-[390px] min-h-[844px] sm:rounded-[36px] sm:border-[8px] sm:border-slate-800 sm:my-2'
-              : deviceMode === 'tablet'
-              ? 'w-full max-w-[768px] min-h-[1024px] sm:rounded-2xl sm:border-[6px] sm:border-slate-800 sm:my-2'
-              : 'w-full max-w-[1440px] min-h-screen'
-          }`}
-        >
-          {/* Mobile Speaker & Camera Notch (Only in Mobile Frame Mode) */}
-          {deviceMode === 'mobile' && (
-            <div className="hidden sm:flex justify-center items-center h-5 w-full bg-slate-800 relative z-50">
-              <div className="w-20 h-3 bg-black rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-slate-800 ml-auto mr-2" />
-              </div>
-            </div>
-          )}
+      {/* Capital One Online Banking Sign-In Modal */}
+      <SignInModal
+        isOpen={isSignInOpen}
+        onClose={() => setIsSignInOpen(false)}
+        onNavigate={navigate}
+      />
 
-          {renderRouteContent()}
+      {/* Pre-Approval Soft Credit Check Simulator */}
+      <PreApprovalSimulator
+        isOpen={isPreApprovalOpen}
+        onClose={() => setIsPreApprovalOpen(false)}
+        onSelectMatchedCard={(cardName) => {
+          showToast(`Pre-approval match saved for ${cardName}`);
+          handleApplyCard(cardName);
+        }}
+      />
 
-          {/* Slide-Out Navigation Drawer */}
-          <SlideNavDrawer
-            isOpen={isMenuOpen}
-            onClose={() => setIsMenuOpen(false)}
-            onOpenSignIn={() => {
-              setIsMenuOpen(false);
-              navigate('/signin');
-            }}
-            onNavigateSection={handleNavigateSection}
-          />
+      {/* Admin Passcode Modal (Triggered by 5 clicks on Google Icon in Footer) */}
+      <AdminPasscodeModal
+        isOpen={isAdminPasscodeOpen}
+        onClose={() => setIsAdminPasscodeOpen(false)}
+        onSuccess={() => navigate('/admin')}
+      />
 
-          {/* Capital One Online Banking Sign-In Modal */}
-          <SignInModal
-            isOpen={isSignInOpen}
-            onClose={() => setIsSignInOpen(false)}
-            onNavigate={navigate}
-          />
+      {/* Floating 'Chat with Eno' Virtual Assistant Widget */}
+      <ChatWithEno
+        onNavigate={navigate}
+        onOpenPreApproval={() => setIsPreApprovalOpen(true)}
+      />
 
-          {/* Pre-Approval Soft Credit Check Simulator */}
-          <PreApprovalSimulator
-            isOpen={isPreApprovalOpen}
-            onClose={() => setIsPreApprovalOpen(false)}
-            onSelectMatchedCard={(cardName) => {
-              showToast(`Pre-approval match saved for ${cardName}`);
-              handleApplyCard(cardName);
-            }}
-          />
-
-          {/* Admin Passcode Modal (Triggered by 5 clicks on Google Icon in Footer) */}
-          <AdminPasscodeModal
-            isOpen={isAdminPasscodeOpen}
-            onClose={() => setIsAdminPasscodeOpen(false)}
-            onSuccess={() => navigate('/admin')}
-          />
-
-          {/* Floating 'Chat with Eno' Virtual Assistant Widget */}
-          <ChatWithEno
-            onNavigate={navigate}
-            onOpenPreApproval={() => setIsPreApprovalOpen(true)}
-          />
-
-          {/* Global Toast Notification */}
-          {toastMessage && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-full shadow-2xl border border-slate-700 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{toastMessage}</span>
-              <button
-                type="button"
-                onClick={() => setToastMessage(null)}
-                className="ml-2 text-slate-400 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+      {/* Global Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-full shadow-2xl border border-slate-700 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="ml-2 text-slate-400 hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
