@@ -25,6 +25,7 @@ import { SlideNavDrawer } from './components/SlideNavDrawer';
 import { SignInModal } from './components/SignInModal';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { ShareButton } from './components/ShareButton';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 // Dedicated simulation routes
 import { InterstitialPage } from './pages/InterstitialPage';
@@ -281,6 +282,9 @@ function AppContent() {
 
             {/* Share Button - Share this app via WhatsApp, Xender, or any app */}
             <ShareButton variant="fab" />
+
+            {/* PWA Install Prompt - Install app to home screen */}
+            <PWAInstallPrompt />
           </>
         );
     }
