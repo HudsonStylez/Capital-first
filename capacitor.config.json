@@ -1,0 +1,31 @@
+{
+  "appId": "com.capitalone.app",
+  "appName": "CapitalOne",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowAfter": 0
+    },
+    "Keyboard": {
+      "resize": false,
+      "resizeOnKeyboardShow": false,
+      "style": "none"
+    },
+    "StatusBar": {
+      "style": "default",
+      "backgroundColor": "#005C9D"
+    },
+    "Device": {
+      "iosPaddingContentTop": true
+    }
+  },
+  "ios": {
+    "scheme": "capitalone",
+    "contentInset": "always"
+  },
+  "android": {
+    "scheme": "capitalone",
+    "allowMixedContent": true
+  }
+}

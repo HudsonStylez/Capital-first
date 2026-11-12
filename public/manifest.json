@@ -1,0 +1,13 @@
+{
+  "name": "Capital One Mobile",
+  "short_name": "Capital One",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#005C9D",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "en",
+  "description": "Capital One mobile banking experience — credit cards, checking, savings, auto financing, and credit monitoring.",
+  "icons": []
+}

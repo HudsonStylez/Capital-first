@@ -24,6 +24,7 @@ import { FloatingMegaphone } from './components/FloatingMegaphone';
 import { SlideNavDrawer } from './components/SlideNavDrawer';
 import { SignInModal } from './components/SignInModal';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
+import { ShareButton } from './components/ShareButton';
 
 // Dedicated simulation routes
 import { InterstitialPage } from './pages/InterstitialPage';
@@ -277,6 +278,9 @@ function AppContent() {
               isHighContrast={isHighContrast}
               onToggleHighContrast={() => setIsHighContrast(!isHighContrast)}
             />
+
+            {/* Share Button - Share this app via WhatsApp, Xender, or any app */}
+            <ShareButton variant="fab" />
           </>
         );
     }
