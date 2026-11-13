@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import { BudgetPieChart } from '../components/BudgetPieChart';
 import { TransactionExportModal } from '../components/TransactionExportModal';
+import { SupportChat } from '../components/SupportChat';
 
 interface UserBankingDashboardProps {
   onNavigate: (path: string) => void;
@@ -5107,6 +5108,11 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
         checkingBalance={checkingAcc?.balance || 0}
         showToast={showTopRightToast}
       />
+
+      {/* ========================================================
+          SUPPORT CHAT WIDGET (Floating bottom-left)
+          ======================================================== */}
+      <SupportChat />
 
       {/* ========================================================
           STICKY BOTTOM NAVIGATION (Home, Benefits, Pay/Move, Help, Profile)

@@ -26,6 +26,7 @@ import { SignInModal } from './components/SignInModal';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { ShareButton } from './components/ShareButton';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { TransactionReceipt } from './components/TransactionReceipt';
 
 // Dedicated simulation routes
 import { InterstitialPage } from './pages/InterstitialPage';
@@ -84,11 +85,56 @@ function AppContent() {
   // Global Toast Feedback State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Transaction Receipt State
+  const [currentReceipt, setCurrentReceipt] = useState<{
+    transaction: {
+      id: string;
+      referenceNumber: string;
+      merchant: string;
+      type: 'Deposit' | 'Withdrawal' | 'Payment' | 'Transfer';
+      status: 'Completed' | 'Pending' | 'Declined';
+      amount: number;
+      date: string;
+      category?: string;
+      destinationDetails?: string;
+      adminFeedback?: string;
+    };
+    account: {
+      type: 'checking' | 'credit';
+      accountNumber: string;
+      balanceBefore: number;
+      balanceAfter: number;
+      availableCredit?: number;
+    };
+  } | null>(null);
+
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => {
       setToastMessage(null);
     }, 3500);
+  };
+
+  const showTransactionReceipt = (transaction: {
+    id: string;
+    referenceNumber: string;
+    merchant: string;
+    type: 'Deposit' | 'Withdrawal' | 'Payment' | 'Transfer';
+    status: 'Completed' | 'Pending' | 'Declined';
+    amount: number;
+    date: string;
+    category?: string;
+    destinationDetails?: string;
+    adminFeedback?: string;
+  }, account: {
+    type: 'checking' | 'credit';
+    accountNumber: string;
+    balanceBefore: number;
+    balanceAfter: number;
+    availableCredit?: number;
+  }) => {
+    setCurrentReceipt({ transaction, account });
+    showToast(`Transaction receipt ready for ${transaction.merchant}`);
   };
 
   const resolveSectionId = (sectionId: string) => {
@@ -280,6 +326,17 @@ function AppContent() {
               onToggleHighContrast={() => setIsHighContrast(!isHighContrast)}
             />
 
+            {/* Transaction Receipt Modal */}
+            {currentReceipt && (
+              <TransactionReceipt
+                isOpen={!!currentReceipt}
+                transaction={currentReceipt.transaction}
+                account={currentReceipt.account}
+                onEmailSent={() => showToast('Receipt emailed successfully')}
+                onClose={() => setCurrentReceipt(null)}
+              />
+            )}
+
             {/* Share Button - Share this app via WhatsApp, Xender, or any app */}
             <ShareButton variant="fab" />
 
@@ -350,6 +407,17 @@ function AppContent() {
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+      )}
+
+      {/* Transaction Receipt Modal */}
+      {currentReceipt && (
+        <TransactionReceipt
+          isOpen={!!currentReceipt}
+          transaction={currentReceipt.transaction}
+          account={currentReceipt.account}
+          onEmailSent={() => showToast('Receipt emailed successfully')}
+          onClose={() => setCurrentReceipt(null)}
+        />
       )}
     </div>
   );
