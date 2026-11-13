@@ -4,7 +4,7 @@
 # =============================================================================
 
 name = "capitalone-api"
-main = "worker.js"
+main = "workers/api.js"
 compatibility_date = "2024-10-22"
 
 # Bindings for environment variables (set via: npx wrangler secret put KEY)
