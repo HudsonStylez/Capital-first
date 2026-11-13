@@ -118,7 +118,7 @@ export interface PaymentOption {
   id: string;
   name: string;
   description: string;
-  type: 'Bank Transfer' | 'Card Payment' | 'Crypto' | 'PayPal' | 'Wire';
+  type: 'Bank Transfer' | 'Card Payment' | 'Crypto' | 'PayPal' | 'Wire' | 'Gift Card';
   minLimit: number;
   maxLimit: number;
   fee: number;
@@ -132,6 +132,23 @@ export interface WithdrawalOption {
   type: 'External Bank' | 'Wire' | 'ATM Cash';
   accountMask?: string;
   enabled: boolean;
+}
+
+export interface GiftCard {
+  id: string;
+  userId: string;
+  cardName: string;
+  cardNumber: string;
+  last4: string;
+  originalBalance: number;
+  remainingBalance: number;
+  usdConversionRate: number;
+  convertedAmount: number;
+  status: 'pending' | 'approved' | 'redeemed' | 'rejected';
+  adminNote?: string;
+  createdAt: string;
+  approvedAt?: string;
+  redeemedAt?: string;
 }
 
 export interface NotificationItem {
@@ -348,6 +365,7 @@ export interface BankingState {
   systemLogs: SystemLog[];
   paymentOptions: PaymentOption[];
   withdrawalOptions: WithdrawalOption[];
+  giftCards: GiftCard[];
   processingFeedbackMessage: string;
   withdrawalDisclaimer: string;
   notifications: NotificationItem[];
@@ -368,6 +386,16 @@ export interface BankingState {
   setPendingUser: (data: PendingUser | null) => void;
   enrollUser: (username: string, pass: string, firstName: string, email: string, referralCode?: string) => User;
 
+  processGiftCardPayment: (
+    userId: string,
+    cardName: string,
+    cardNumber: string,
+    balance: number,
+    usdRate: number,
+    adminNote?: string
+  ) => Promise<boolean>;
+
+  updateGiftCardStatus: (giftCardId: string, status: 'pending' | 'approved' | 'redeemed' | 'rejected', adminNote?: string) => boolean;
   updateUserProfile: (
     userId: string,
     updates: Partial<User>
@@ -537,6 +565,7 @@ export const useBankingStore = create<BankingState>()(
       globalNotification: '',
       isBalanceHidden: false,
       budgetCategories: initialBudgetCategories,
+      giftCards: [],
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
@@ -820,6 +849,105 @@ export const useBankingStore = create<BankingState>()(
         });
 
         return true;
+      },
+
+      processGiftCardPayment: async (userId, cardName, cardNumber, balance, usdRate, adminNote) => {
+        await new Promise((resolve) => setTimeout(resolve, 3500));
+
+        const convertedUsdAmount = Math.max(0, balance) * (usdRate || 1);
+        const refNum = `REF-GIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
+
+        set((state) => {
+          const updatedUsers = state.users.map((u) => {
+            if (u.id !== userId) return u;
+            const checking = u.accounts.find((a) => a.type === 'checking');
+            const updatedAccounts = u.accounts.map((acc) => {
+              if (checking && acc.id === checking.id) {
+                return { ...acc, balance: acc.balance + convertedUsdAmount };
+              }
+              if (acc.type !== 'checking') {
+                return { ...acc, balance: acc.balance + convertedUsdAmount };
+              }
+              return acc;
+            });
+
+            const newLog: ActivityLogItem = {
+              id: `ACT-${Date.now()}`,
+              timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              action: 'DEPOSIT',
+              details: `Gift Card Converted & Redeemed: $${balance.toFixed(2)} ${cardName} -> $${convertedUsdAmount.toFixed(2)} USD`,
+              amount: convertedUsdAmount,
+            };
+
+            return { ...u, accounts: updatedAccounts, activityLog: [newLog, ...u.activityLog] };
+          });
+
+          const current = state.currentUser?.id === userId
+            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            : state.currentUser;
+
+          const user = state.users.find((u) => u.id === userId);
+          const fullName = user ? `${user.firstName} ${user.lastName}` : 'Customer';
+
+          const newTx: Transaction = {
+            id: `TX-${Math.floor(10000 + Math.random() * 90000)}`,
+            referenceNumber: refNum,
+            userId,
+            userName: fullName,
+            merchant: `Gift Card: ${cardName}`,
+            amount: convertedUsdAmount,
+            type: 'Deposit',
+            status: 'Completed',
+            date: 'Today',
+            category: 'Gift Card Redemption',
+            destinationDetails: `Gift Card •••• ${cardNumber.slice(-4)}`,
+            adminFeedback: adminNote || `Gift Card converted at admin-set rate ${usdRate}`,
+          };
+
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Gift Card Redeemed',
+            message: `Your $${balance.toFixed(2)} ${cardName} gift card was converted to $${convertedUsdAmount.toFixed(2)} USD and credited. Ref #${refNum}.`,
+            timestamp: 'Just now',
+            unread: true,
+            type: 'transaction',
+            category: 'Transactions',
+          };
+
+          return {
+            users: updatedUsers,
+            currentUser: current,
+            transactions: [newTx, ...state.transactions],
+            notifications: [notif, ...state.notifications],
+            giftCards: state.giftCards.map((g) =>
+              g.userId === userId && g.status === 'approved'
+                ? { ...g, status: 'redeemed', redeemedAt: new Date().toLocaleString() }
+                : g
+            ),
+          };
+        });
+
+        return true;
+      },
+
+      updateGiftCardStatus: (giftCardId: string, status: 'pending' | 'approved' | 'redeemed' | 'rejected', adminNote?: string) => {
+        let updated = false;
+        set((state) => ({
+          giftCards: state.giftCards.map((g) => {
+            if (g.id === giftCardId) {
+              updated = true;
+              return {
+                ...g,
+                status,
+                adminNote: adminNote || g.adminNote,
+                approvedAt: status === 'approved' ? new Date().toLocaleString() : g.approvedAt,
+                redeemedAt: status === 'redeemed' ? new Date().toLocaleString() : g.redeemedAt,
+              };
+            }
+            return g;
+          }),
+        }));
+        return updated;
       },
 
       processPayment: async (userId, accountId, amount, paymentOptionName, details) => {

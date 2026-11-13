@@ -91,10 +91,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     setGlobalNotification,
     clearAllData,
     deleteTransaction,
+    giftCards,
+    processGiftCardPayment,
+    updateGiftCardStatus,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
-    'users' | 'transactions' | 'kyc' | 'payment-settings' | 'notifications' | 'logs'
+    'users' | 'transactions' | 'kyc' | 'payment-settings' | 'notifications' | 'logs' | 'gift-cards'
   >('users');
 
   const [userSearch, setUserSearch] = useState('');
