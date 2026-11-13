@@ -1,0 +1,15 @@
+# =============================================================================
+# Capital One Clone - Cloudflare Workers Configuration
+# Deploy with: npx wrangler deploy
+# =============================================================================
+
+name = "capitalone-api"
+main = "worker.js"
+compatibility_date = "2024-10-22"
+
+# Bindings for environment variables (set via: npx wrangler secret put KEY)
+# SENDGRID_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN
+
+[vars]
+# Set these via `npx wrangler secret put` for production
+# PORT = "3001"
