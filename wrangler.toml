@@ -7,6 +7,12 @@ name = "capitalone-api"
 main = "workers/api.js"
 compatibility_date = "2024-10-22"
 
+# Serve frontend assets from the dist directory
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = false
+
 # Bindings for environment variables (set via: npx wrangler secret put KEY)
 # SENDGRID_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN
 
