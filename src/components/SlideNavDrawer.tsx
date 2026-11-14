@@ -81,7 +81,28 @@ export const SlideNavDrawer: React.FC<SlideNavDrawerProps> = ({
         { label: 'Commercial Lending Solutions', action: () => onNavigateSection('banking') },
       ],
     },
+    {
+      id: 'rewards',
+      title: 'Rewards, Travel & Support',
+      icon: ShieldCheck,
+      items: [
+        { label: 'Redeem Rewards & Miles', action: () => onNavigateSection('cards') },
+        { label: 'Capital One Travel', action: () => onNavigateSection('banking') },
+        { label: 'Capital One Shopping', action: () => onNavigateSection('cards') },
+        { label: 'Refer a Friend', action: () => onNavigateSection('banking') },
+        { label: 'Help & Customer Support', action: () => onNavigateSection('business-solutions') },
+      ],
+    },
   ];
+
+  const q = searchQuery.trim().toLowerCase();
+  const isSearching = q.length > 0;
+  const visibleCategories = navCategories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter((i) => !isSearching || i.label.toLowerCase().includes(q)),
+    }))
+    .filter((cat) => !isSearching || cat.items.length > 0 || cat.title.toLowerCase().includes(q));
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -147,9 +168,12 @@ export const SlideNavDrawer: React.FC<SlideNavDrawerProps> = ({
 
         {/* Navigation Accordion List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-1.5 divide-y divide-slate-100">
-          {navCategories.map((cat) => {
+          {visibleCategories.length === 0 && (
+            <p className="text-xs text-slate-400 text-center py-6">No matches for “{searchQuery}”.</p>
+          )}
+          {visibleCategories.map((cat) => {
             const Icon = cat.icon;
-            const isExpanded = expandedSection === cat.id;
+            const isExpanded = isSearching || expandedSection === cat.id;
 
             return (
               <div key={cat.id} className="pt-2 first:pt-0">
