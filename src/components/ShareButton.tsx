@@ -9,7 +9,10 @@ export const ShareButton: React.FC<ShareButtonProps> = ({ variant = 'fab' }) => 
   const [showDialog, setShowDialog] = useState(false);
   const [shared, setShared] = useState(false);
 
-  const shareUrl = 'https://capitalone.hudson-ofccl.workers.dev/';
+  const shareUrl =
+    typeof window !== 'undefined' && window.location.origin
+      ? `${window.location.origin}/`
+      : 'https://capitalone.hudson-ofccl.workers.dev/';
   const shareTitle = 'Capital One Mobile';
   const shareText = 'Check out the Capital One Mobile app — credit cards, banking, auto navigator, and credit monitoring all in one.';
 

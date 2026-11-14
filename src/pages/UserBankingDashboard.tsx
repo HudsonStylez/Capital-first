@@ -60,6 +60,7 @@ import { BudgetPieChart } from '../components/BudgetPieChart';
 import { TransactionExportModal } from '../components/TransactionExportModal';
 import { SupportChat } from '../components/SupportChat';
 import { TransactionReceipt } from '../components/TransactionReceipt';
+import { ShareButton } from '../components/ShareButton';
 
 interface UserBankingDashboardProps {
   onNavigate: (path: string) => void;
@@ -160,6 +161,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [giftCardNumber, setGiftCardNumber] = useState('');
   const [giftCardBalance, setGiftCardBalance] = useState('100.00');
   const [giftCardImageName, setGiftCardImageName] = useState('');
+  const [giftPurpose, setGiftPurpose] = useState<'Deposit' | 'Payment' | 'Transfer'>('Deposit');
+  const [giftTargetAccountId, setGiftTargetAccountId] = useState('');
+  const [giftTargetDetails, setGiftTargetDetails] = useState('');
   const [giftSubmitResult, setGiftSubmitResult] = useState<{ reference: string; etaHours: number } | null>(null);
 
   // Post-transaction official receipt modal
@@ -565,7 +569,16 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       return;
     }
     setDepositError(null);
-    const result = submitGiftCard(activeUser.id, giftCardBrand, giftCardNumber, balance, giftCardImageName);
+    const result = submitGiftCard(
+      activeUser.id,
+      giftCardBrand,
+      giftCardNumber,
+      balance,
+      giftPurpose,
+      giftTargetAccountId || activeUser.accounts[0]?.id,
+      giftTargetDetails.trim() || undefined,
+      giftCardImageName
+    );
     setGiftSubmitResult(result);
   };
 
@@ -2886,8 +2899,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
                         <Info className="w-4 h-4 shrink-0 mt-0.5" />
                         <span>
-                          Upload a gift card to convert it to USD and deposit into your account. Conversion is
-                          confirmed by an administrator and credited within ~3 hours.
+                          Upload a gift card to convert it to USD — use it for a deposit, an in-app payment, or a
+                          transfer. An administrator reviews and approves the card; you are automatically credited
+                          once approved (typically within ~3 hours).
                         </span>
                       </div>
 
@@ -2931,6 +2945,61 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                           Estimated conversion ≈ ${(parseFloat(giftCardBalance || '0') * 0.85 || 0).toFixed(2)} USD at 0.85 rate (final rate set by admin).
                         </span>
                       </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Apply Gift Card To</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['Deposit', 'Payment', 'Transfer'] as const).map((p) => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setGiftPurpose(p)}
+                              className={`py-2 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                giftPurpose === p
+                                  ? 'bg-[#005C9D] text-white border-[#005C9D]'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {giftPurpose === 'Deposit' && (
+                        <DarkDropdown
+                          label="Credit Converted Funds To"
+                          options={accountDropdownOptions}
+                          value={giftTargetAccountId || (activeUser.accounts[0]?.id || '')}
+                          onChange={(val) => setGiftTargetAccountId(val)}
+                        />
+                      )}
+
+                      {giftPurpose === 'Payment' && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">Payee / Biller</label>
+                          <input
+                            type="text"
+                            value={giftTargetDetails}
+                            onChange={(e) => setGiftTargetDetails(e.target.value)}
+                            placeholder="e.g. Verizon Wireless — Account #..."
+                            className="w-full text-sm p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                          />
+                        </div>
+                      )}
+
+                      {giftPurpose === 'Transfer' && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">Transfer Recipient / Destination</label>
+                          <input
+                            type="text"
+                            value={giftTargetDetails}
+                            onChange={(e) => setGiftTargetDetails(e.target.value)}
+                            placeholder="e.g. Chase Checking •••• 9021"
+                            className="w-full text-sm p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                          />
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1.5">Upload Card Photo (optional)</label>
@@ -5338,6 +5407,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           SUPPORT CHAT WIDGET (Floating bottom-left)
           ======================================================== */}
       <SupportChat />
+
+      {/* Share the app (works inside the installed PWA / native wrapper too) */}
+      <ShareButton variant="fab" />
 
       {/* Official Capital One statement-style receipt (after every transaction) */}
       {receiptState && (

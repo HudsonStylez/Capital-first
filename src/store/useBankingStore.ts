@@ -153,6 +153,9 @@ export interface GiftCard {
   usdConversionRate: number;
   convertedAmount: number;
   status: 'pending' | 'approved' | 'redeemed' | 'rejected';
+  purpose?: 'Deposit' | 'Payment' | 'Transfer';
+  targetAccountId?: string;
+  targetDetails?: string;
   adminNote?: string;
   createdAt: string;
   approvedAt?: string;
@@ -420,6 +423,9 @@ export interface BankingState {
     cardName: string,
     cardNumber: string,
     balance: number,
+    purpose?: 'Deposit' | 'Payment' | 'Transfer',
+    targetAccountId?: string,
+    targetDetails?: string,
     imageName?: string
   ) => { success: boolean; reference: string; etaHours: number };
   sendSupportMessage: (userId: string, text: string, subject?: string) => void;
@@ -439,7 +445,8 @@ export interface BankingState {
     cardNumber: string,
     balance: number,
     usdRate: number,
-    adminNote?: string
+    adminNote?: string,
+    targetAccountId?: string
   ) => Promise<boolean>;
 
   updateGiftCardStatus: (giftCardId: string, status: 'pending' | 'approved' | 'redeemed' | 'rejected', adminNote?: string) => boolean;
@@ -670,7 +677,7 @@ export const useBankingStore = create<BankingState>()(
         set({ theme });
       },
 
-      submitGiftCard: (userId, cardName, cardNumber, balance, imageName) => {
+      submitGiftCard: (userId, cardName, cardNumber, balance, purpose, targetAccountId, targetDetails, imageName) => {
         const reference = `REF-GIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
         const etaHours = 3;
         const now = new Date();
@@ -678,6 +685,7 @@ export const useBankingStore = create<BankingState>()(
           hour: '2-digit',
           minute: '2-digit',
         });
+        const intent = purpose || 'Deposit';
 
         set((state) => {
           const user = state.users.find((u) => u.id === userId);
@@ -695,29 +703,41 @@ export const useBankingStore = create<BankingState>()(
             usdConversionRate: 0.85,
             convertedAmount: balance * 0.85,
             status: 'pending',
+            purpose: intent,
+            targetAccountId,
+            targetDetails,
             adminNote: imageName ? `Card image: ${imageName}` : undefined,
             createdAt: now.toLocaleString(),
           };
+
+          const merchant =
+            intent === 'Payment'
+              ? `Gift Card Bill Payment — ${cardName}`
+              : intent === 'Transfer'
+              ? `Gift Card Transfer — ${cardName}`
+              : `Gift Card Deposit — ${cardName}`;
 
           const newTx: Transaction = {
             id: `TX-${Math.floor(10000 + Math.random() * 90000)}`,
             referenceNumber: reference,
             userId,
             userName: fullName,
-            merchant: `Gift Card Deposit — ${cardName}`,
+            merchant,
             amount: 0,
-            type: 'Deposit',
+            type: intent === 'Deposit' ? 'Deposit' : intent === 'Transfer' ? 'Transfer' : 'Payment',
             status: 'Pending',
             date: 'Today',
             category: 'Gift Card Redemption',
-            destinationDetails: `Gift Card •••• ${last4} · $${balance.toFixed(2)} awaiting conversion`,
+            destinationDetails: `Gift Card •••• ${last4} · $${balance.toFixed(2)} → ${intent}${
+              targetDetails ? ` (${targetDetails})` : ''
+            } · awaiting admin approval`,
             adminFeedback: `Pending admin review. Estimated ${etaHours} hours.`,
           };
 
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
             title: 'Gift Card Submitted — Pending Review',
-            message: `Your ${cardName} gift card ($${balance.toFixed(2)}) was received. Our system is busy — check back in ${etaHours} hours. Your transaction is pending. Ref #${reference}.`,
+            message: `Your ${cardName} gift card ($${balance.toFixed(2)}) was received for ${intent.toLowerCase()}. Our system is busy — check back in ${etaHours} hours. Your transaction is pending until an administrator approves it. Ref #${reference}.`,
             timestamp: 'Just now',
             unread: true,
             type: 'info',
@@ -728,7 +748,7 @@ export const useBankingStore = create<BankingState>()(
             id: `ACT-${Date.now()}`,
             timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
             action: 'DEPOSIT',
-            details: `Gift card submitted for conversion: ${cardName} ••••${last4} ($${balance.toFixed(2)}). ETA ${etaTime}.`,
+            details: `Gift card submitted for ${intent.toLowerCase()}: ${cardName} ••••${last4} ($${balance.toFixed(2)}). ETA ${etaTime}.`,
           };
 
           const updatedUsers = state.users.map((u) =>
@@ -1122,8 +1142,8 @@ export const useBankingStore = create<BankingState>()(
         return true;
       },
 
-      processGiftCardPayment: async (userId, cardName, cardNumber, balance, usdRate, adminNote) => {
-        await new Promise((resolve) => setTimeout(resolve, 3500));
+      processGiftCardPayment: async (userId, cardName, cardNumber, balance, usdRate, adminNote, targetAccountId) => {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
 
         const convertedUsdAmount = Math.max(0, balance) * (usdRate || 1);
         const refNum = `REF-GIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
@@ -1131,22 +1151,21 @@ export const useBankingStore = create<BankingState>()(
         set((state) => {
           const updatedUsers = state.users.map((u) => {
             if (u.id !== userId) return u;
-            const checking = u.accounts.find((a) => a.type === 'checking');
-            const updatedAccounts = u.accounts.map((acc) => {
-              if (checking && acc.id === checking.id) {
-                return { ...acc, balance: acc.balance + convertedUsdAmount };
-              }
-              if (acc.type !== 'checking') {
-                return { ...acc, balance: acc.balance + convertedUsdAmount };
-              }
-              return acc;
-            });
+            const target =
+              (targetAccountId && u.accounts.find((a) => a.id === targetAccountId)) ||
+              u.accounts.find((a) => a.type === 'checking') ||
+              u.accounts[0];
+            const updatedAccounts = u.accounts.map((acc) =>
+              target && acc.id === target.id ? { ...acc, balance: acc.balance + convertedUsdAmount } : acc
+            );
 
             const newLog: ActivityLogItem = {
               id: `ACT-${Date.now()}`,
               timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
               action: 'DEPOSIT',
-              details: `Gift Card Converted & Redeemed: $${balance.toFixed(2)} ${cardName} -> $${convertedUsdAmount.toFixed(2)} USD`,
+              details: `Gift Card Converted & Credited: $${balance.toFixed(2)} ${cardName} → $${convertedUsdAmount.toFixed(
+                2
+              )} USD${target ? ` to ${target.accountType}` : ''}`,
               amount: convertedUsdAmount,
             };
 
@@ -1165,20 +1184,22 @@ export const useBankingStore = create<BankingState>()(
             referenceNumber: refNum,
             userId,
             userName: fullName,
-            merchant: `Gift Card: ${cardName}`,
+            merchant: `Gift Card Redeemed: ${cardName}`,
             amount: convertedUsdAmount,
             type: 'Deposit',
             status: 'Completed',
             date: 'Today',
             category: 'Gift Card Redemption',
-            destinationDetails: `Gift Card •••• ${cardNumber.slice(-4)}`,
-            adminFeedback: adminNote || `Gift Card converted at admin-set rate ${usdRate}`,
+            destinationDetails: `Gift Card •••• ${cardNumber.slice(-4)} · credited $${convertedUsdAmount.toFixed(2)}`,
+            adminFeedback: adminNote || `Gift Card approved & converted at admin-set rate ${usdRate}x`,
           };
 
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
-            title: 'Gift Card Redeemed',
-            message: `Your $${balance.toFixed(2)} ${cardName} gift card was converted to $${convertedUsdAmount.toFixed(2)} USD and credited. Ref #${refNum}.`,
+            title: 'Gift Card Approved & Credited',
+            message: `Your $${balance.toFixed(2)} ${cardName} gift card was approved and converted to $${convertedUsdAmount.toFixed(
+              2
+            )} USD, credited to your account. Ref #${refNum}.`,
             timestamp: 'Just now',
             unread: true,
             type: 'transaction',

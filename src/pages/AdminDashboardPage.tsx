@@ -1552,6 +1552,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                           <p className="text-[11px] text-slate-500 mt-0.5">
                             Original ${g.originalBalance.toFixed(2)} · Remaining ${g.remainingBalance.toFixed(2)}
                           </p>
+                          <p className="text-[11px] text-sky-300 mt-0.5">
+                            Apply to: <strong>{g.purpose || 'Deposit'}</strong>
+                            {g.targetDetails ? ` · ${g.targetDetails}` : ''}
+                          </p>
                           {g.adminNote && (
                             <p className="text-[11px] text-slate-400 italic mt-1">Note: {g.adminNote}</p>
                           )}
@@ -1628,7 +1632,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                   g.cardName,
                                   g.cardNumber,
                                   g.remainingBalance,
-                                  rate
+                                  rate,
+                                  `Assigned to ${g.purpose || 'Deposit'}${g.targetDetails ? ` — ${g.targetDetails}` : ''}`,
+                                  g.targetAccountId
                                 );
                                 setConvertingGiftId(null);
                                 showToast(ok ? `${g.cardName} redeemed — $${projectedUsd} credited.` : 'Redemption failed.');
