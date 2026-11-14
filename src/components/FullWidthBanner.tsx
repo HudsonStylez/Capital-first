@@ -36,6 +36,7 @@ export const FullWidthBanner: React.FC<FullWidthBannerProps> = ({ onExploreAllCa
         )}
 
         {/* Ambient bottom scrim and callout pill */}
+        <div className="img-glass-strong img-glass" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-6 sm:p-10 pointer-events-none">
           <div className="max-w-md pointer-events-auto">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs font-bold text-[#005C9D] mb-2 shadow-xs">

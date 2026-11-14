@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Megaphone, X, ZoomIn, ZoomOut, Eye, CheckCircle2, MessageSquare, Send } from 'lucide-react';
+import { Megaphone, X, ZoomIn, ZoomOut, Eye, CheckCircle2, MessageSquare, Send, Moon, Sun } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useBankingStore } from '../store/useBankingStore';
 
 interface FloatingMegaphoneProps {
   fontSizeLevel: 'normal' | 'large' | 'xlarge';
@@ -18,6 +19,7 @@ export const FloatingMegaphone: React.FC<FloatingMegaphoneProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
+  const { theme, toggleTheme } = useBankingStore();
 
   useEscapeKey(() => setIsOpen(false), isOpen);
 
@@ -121,6 +123,35 @@ export const FloatingMegaphone: React.FC<FloatingMegaphoneProps> = ({
                   <span
                     className={`block w-4 h-4 rounded-full bg-white transition-transform ${
                       isHighContrast ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Dark Theme Mode */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-2">
+                  {theme === 'dark' ? (
+                    <Moon className="w-4 h-4 text-slate-700" />
+                  ) : (
+                    <Sun className="w-4 h-4 text-amber-500" />
+                  )}
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Dark Theme</span>
+                    <span className="text-[11px] text-slate-500">Switch between light and glassy dark mode</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  aria-label="Toggle dark theme"
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    theme === 'dark' ? 'bg-[#005C9D]' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`block w-4 h-4 rounded-full bg-white transition-transform ${
+                      theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>

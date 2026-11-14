@@ -596,6 +596,26 @@ export interface BankingState {
   deleteTransaction: (id: string) => void;
 }
 
+function initialTheme(): ThemeMode {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const t = localStorage.getItem('capitalone_theme');
+      if (t === 'dark') return 'dark';
+      if (t === 'light') return 'light';
+    }
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
+      return 'dark';
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'light';
+}
+
 export const useBankingStore = create<BankingState>()(
   persist(
     (set, get) => ({
@@ -616,7 +636,7 @@ export const useBankingStore = create<BankingState>()(
       budgetCategories: initialBudgetCategories,
       giftCards: seedGiftCards,
       supportThreads: seedSupportThreads,
-      theme: 'light',
+      theme: initialTheme(),
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
@@ -628,6 +648,11 @@ export const useBankingStore = create<BankingState>()(
           if (typeof document !== 'undefined') {
             document.documentElement.classList.toggle('dark', next === 'dark');
           }
+          try {
+            localStorage.setItem('capitalone_theme', next);
+          } catch {
+            /* ignore */
+          }
           return { theme: next };
         });
       },
@@ -635,6 +660,11 @@ export const useBankingStore = create<BankingState>()(
       setTheme: (theme) => {
         if (typeof document !== 'undefined') {
           document.documentElement.classList.toggle('dark', theme === 'dark');
+        }
+        try {
+          localStorage.setItem('capitalone_theme', theme);
+        } catch {
+          /* ignore */
         }
         set({ theme });
       },
