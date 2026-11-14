@@ -26,6 +26,8 @@ const iso = (daysAgo: number, hour = 12, min = 0): string => {
   return d.toISOString();
 };
 
+const minsAgo = (minutes: number): string => new Date(Date.now() - minutes * 60000).toISOString();
+
 // -----------------------------------------------------------------------------
 // Shared budget categories
 // -----------------------------------------------------------------------------
@@ -402,6 +404,16 @@ export const seedUsers: User[] = [
 export const seedTransactions: Transaction[] = [
   // Alex Morgan
   { id: 'tx-alex-001', referenceNumber: 'REF-CAP-100241', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Acme Corp Payroll', amount: 6240.0, type: 'Deposit', status: 'Completed', date: iso(0, 9, 15), category: 'Income', destinationDetails: 'ACH Direct Deposit' },
+  { id: 'tx-alex-016', referenceNumber: 'REF-CAP-100248', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Chipotle Mexican Grill', amount: -14.2, type: 'Credit Card', status: 'Completed', date: iso(0, 12, 34), category: 'Dining' },
+  { id: 'tx-alex-017', referenceNumber: 'REF-CAP-100247', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Uber', amount: -18.75, type: 'Credit Card', status: 'Completed', date: iso(0, 21, 48), category: 'Auto & Transport' },
+  { id: 'tx-alex-018', referenceNumber: 'REF-CAP-100245', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Apple iCloud+', amount: -2.99, type: 'Credit Card', status: 'Completed', date: iso(1, 3, 0), category: 'Subscriptions' },
+  { id: 'tx-alex-019', referenceNumber: 'REF-CAP-100244', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Target', amount: -76.44, type: 'Credit Card', status: 'Completed', date: iso(1, 18, 12), category: 'Shopping' },
+  { id: 'tx-alex-020', referenceNumber: 'REF-CAP-100243', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Zelle from Jordan R.', amount: 45.0, type: 'Deposit', status: 'Completed', date: iso(2, 19, 5), category: 'Income', destinationDetails: 'Peer transfer' },
+  { id: 'tx-alex-021', referenceNumber: 'REF-CAP-100240', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: "Trader Joe's", amount: -58.13, type: 'Credit Card', status: 'Completed', date: iso(2, 17, 22), category: 'Groceries' },
+  { id: 'tx-alex-022', referenceNumber: 'REF-CAP-100237', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Amazon Prime', amount: -14.99, type: 'Credit Card', status: 'Completed', date: iso(3, 6, 0), category: 'Subscriptions' },
+  { id: 'tx-alex-023', referenceNumber: 'REF-CAP-100233', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Capital One ATM Withdrawal', amount: -100.0, type: 'Withdrawal', status: 'Completed', date: iso(4, 20, 15), category: 'Cash Withdrawal', destinationDetails: 'ATM C1-4471 · Washington, DC' },
+  { id: 'tx-alex-024', referenceNumber: 'REF-CAP-100229', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Starbucks', amount: -5.45, type: 'Credit Card', status: 'Completed', date: iso(4, 7, 52), category: 'Dining' },
+  { id: 'tx-alex-025', referenceNumber: 'REF-CAP-100226', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Verizon Wireless', amount: -85.0, type: 'Payment', status: 'Completed', date: iso(5, 10, 0), category: 'Utilities', destinationDetails: 'Biller: Verizon' },
   { id: 'tx-alex-002', referenceNumber: 'REF-CAP-100238', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Whole Foods Market', amount: -142.38, type: 'Credit Card', status: 'Completed', date: iso(0, 8, 12), category: 'Groceries' },
   { id: 'tx-alex-003', referenceNumber: 'REF-CAP-100235', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Starbucks Coffee', amount: -6.75, type: 'Credit Card', status: 'Completed', date: iso(0, 7, 45), category: 'Dining' },
   { id: 'tx-alex-004', referenceNumber: 'REF-CAP-100231', userId: 'USR-ALEX', userName: 'Alex Morgan', merchant: 'Amazon.com', amount: -187.5, type: 'Credit Card', status: 'Completed', date: iso(1, 19, 22), category: 'Shopping' },
@@ -440,14 +452,20 @@ export const seedTransactions: Transaction[] = [
 // -----------------------------------------------------------------------------
 export const seedSystemLogs: SystemLog[] = [
   { id: 'log-1', timestamp: iso(0, 9, 15), action: 'DEPOSIT', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Direct deposit posted to 360 Checking', amount: 6240.0 },
-  { id: 'log-2', timestamp: iso(0, 8, 12), action: 'PAYMENT', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Card purchase authorized — Whole Foods Market', amount: -142.38 },
-  { id: 'log-3', timestamp: iso(1, 10, 0), action: 'DEPOSIT', userId: 'USR-JOHN', userName: 'John Smith', details: 'Direct deposit posted to 360 Checking', amount: 4120.0 },
-  { id: 'log-4', timestamp: iso(1, 14, 22), action: 'PAYMENT', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Payment to Quicksilver Rewards', amount: 250.0 },
-  { id: 'log-5', timestamp: iso(2, 9, 0), action: 'LOGIN', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Passkey sign-in succeeded' },
-  { id: 'log-6', timestamp: iso(3, 9, 0), action: 'DEPOSIT', userId: 'USR-MARIA', userName: 'Maria Garcia', details: 'Direct deposit posted to 360 Checking', amount: 2380.0 },
-  { id: 'log-7', timestamp: iso(4, 11, 0), action: 'SIGNUP', userId: 'USR-MARIA', userName: 'Maria Garcia', details: 'New enrollment created — KYC pending' },
-  { id: 'log-8', timestamp: iso(6, 15, 0), action: 'LOCK', userId: 'USR-DAVID', userName: 'David Chen', details: 'Account locked after repeated failed passkey attempts' },
-  { id: 'log-9', timestamp: iso(8, 12, 0), action: 'KYC_REVIEW', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'KYC documents approved' },
+  { id: 'log-2', timestamp: iso(0, 9, 14), action: 'LOGIN', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Passkey sign-in · iPhone 15 Pro · Washington, DC · IP 73.12.44.9' },
+  { id: 'log-3', timestamp: iso(0, 8, 12), action: 'PAYMENT', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Card purchase authorized — Whole Foods Market', amount: -142.38 },
+  { id: 'log-4', timestamp: iso(1, 10, 0), action: 'DEPOSIT', userId: 'USR-JOHN', userName: 'John Smith', details: 'Direct deposit posted to 360 Checking', amount: 4120.0 },
+  { id: 'log-5', timestamp: iso(1, 9, 58), action: 'LOGIN', userId: 'USR-JOHN', userName: 'John Smith', details: 'Password sign-in · MacBook Pro · San Francisco, CA · IP 104.28.61.2' },
+  { id: 'log-6', timestamp: iso(1, 14, 22), action: 'PAYMENT', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Payment to Quicksilver Rewards', amount: 250.0 },
+  { id: 'log-7', timestamp: iso(2, 22, 5), action: 'LOGIN', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Sign-in · Safari · Washington, DC · IP 73.12.44.9' },
+  { id: 'log-8', timestamp: iso(3, 9, 0), action: 'DEPOSIT', userId: 'USR-MARIA', userName: 'Maria Garcia', details: 'Direct deposit posted to 360 Checking', amount: 2380.0 },
+  { id: 'log-9', timestamp: iso(4, 11, 0), action: 'SIGNUP', userId: 'USR-MARIA', userName: 'Maria Garcia', details: 'New enrollment created — KYC pending · iPhone 13 · Miami, FL' },
+  { id: 'log-10', timestamp: iso(5, 16, 40), action: 'PROFILE_UPDATE', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Mailing address & contact preferences updated' },
+  { id: 'log-11', timestamp: iso(6, 15, 0), action: 'LOCK', userId: 'USR-DAVID', userName: 'David Chen', details: 'Account locked after 3 failed passkey attempts · New York, NY' },
+  { id: 'log-12', timestamp: iso(7, 8, 30), action: 'LOGIN', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Passkey sign-in · iPhone 15 Pro · Washington, DC' },
+  { id: 'log-13', timestamp: iso(8, 12, 0), action: 'KYC_REVIEW', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'KYC documents approved by compliance' },
+  { id: 'log-14', timestamp: iso(9, 19, 12), action: 'VIRTUAL_CARD', userId: 'USR-ALEX', userName: 'Alex Morgan', details: 'Eno virtual card created · limit $500 · merchant-locked to Amazon' },
+  { id: 'log-15', timestamp: iso(10, 13, 45), action: 'PASSWORD_RESET', userId: 'USR-JOHN', userName: 'John Smith', details: 'Password reset completed via verified email' },
 ];
 
 // -----------------------------------------------------------------------------
@@ -507,6 +525,7 @@ export const seedNotifications: NotificationItem[] = [
     title: 'Direct Deposit Posted',
     message: 'Your payroll deposit of $6,240.00 from Acme Corp has posted to your 360 Checking account.',
     timestamp: 'Just now',
+    createdAt: minsAgo(1),
     unread: true,
     type: 'transaction',
     category: 'Transactions',
@@ -516,6 +535,7 @@ export const seedNotifications: NotificationItem[] = [
     title: 'Capital One Shopping: 15% Rebate',
     message: 'Earn an additional 15% cash back at Apple, Nike, and Dell when you use your Capital One card today.',
     timestamp: '1 hour ago',
+    createdAt: minsAgo(64),
     unread: true,
     type: 'offer',
     category: 'Offers & Discounts',
@@ -525,6 +545,7 @@ export const seedNotifications: NotificationItem[] = [
     title: '360 Performance Savings: 4.25% APY',
     message: 'Your savings interest rate is 4.25% APY — over 8x the national average with FDIC insurance.',
     timestamp: '2 hours ago',
+    createdAt: minsAgo(128),
     unread: true,
     type: 'info',
     category: 'Offers & Discounts',
@@ -534,6 +555,7 @@ export const seedNotifications: NotificationItem[] = [
     title: 'Payment Due Reminder',
     message: 'Your Quicksilver Rewards minimum payment of $35.00 is due in 12 days.',
     timestamp: 'Yesterday',
+    createdAt: minsAgo(60 * 22),
     unread: false,
     type: 'alert',
     category: 'Transactions',
@@ -543,6 +565,7 @@ export const seedNotifications: NotificationItem[] = [
     title: 'Security Alert: New Device Sign-In',
     message: "A new sign-in to your account was detected from Washington, DC. If this wasn't you, secure your account.",
     timestamp: 'Yesterday',
+    createdAt: minsAgo(60 * 31),
     unread: false,
     type: 'security',
     category: 'Security',
@@ -552,6 +575,7 @@ export const seedNotifications: NotificationItem[] = [
     title: 'Scheduled Maintenance',
     message: 'ACH core ledger maintenance Sunday 2:00–4:00 AM EST. Cards and ATM access remain unaffected.',
     timestamp: 'May 8',
+    createdAt: iso(180, 9, 0),
     unread: false,
     type: 'maintenance',
     category: 'Security',

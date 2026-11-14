@@ -167,6 +167,7 @@ export interface NotificationItem {
   title: string;
   message: string;
   timestamp: string;
+  createdAt?: string;
   unread: boolean;
   type: 'maintenance' | 'security' | 'info' | 'alert' | 'offer' | 'transaction';
   category?: 'All' | 'Security' | 'Transactions' | 'Offers & Discounts' | 'Verification';
@@ -2509,6 +2510,7 @@ export const useBankingStore = create<BankingState>()(
           title,
           message,
           timestamp: 'Just now',
+          createdAt: new Date().toISOString(),
           unread: true,
           type,
         };

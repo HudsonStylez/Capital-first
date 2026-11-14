@@ -61,6 +61,8 @@ import { TransactionExportModal } from '../components/TransactionExportModal';
 import { SupportChat } from '../components/SupportChat';
 import { TransactionReceipt } from '../components/TransactionReceipt';
 import { ShareButton } from '../components/ShareButton';
+import { formatTxDate, timeAgo } from '../lib/time';
+import { useNow } from '../hooks/useNow';
 
 interface UserBankingDashboardProps {
   onNavigate: (path: string) => void;
@@ -109,6 +111,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
   // Keep active user synced with state
   const activeUser = users.find((u) => u.id === currentUser?.id) || currentUser;
+
+  // Live clock so relative timestamps ("2 min ago", "Today") stay accurate
+  const now = useNow();
 
   // View Mode: 'dashboard' | 'my-card' | 'my-budget' | 'at-a-glance' | 'investments'
   const [activeViewMode, setActiveViewMode] = useState<'dashboard' | 'my-card' | 'my-budget' | 'at-a-glance' | 'investments'>('dashboard');
@@ -1062,6 +1067,12 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Live secure-session indicator */}
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Secure session · {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+            </div>
+
             {/* Show / Hide Balance Toggle */}
             <button
               type="button"
@@ -1733,7 +1744,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                                 {tx.merchant}
                               </span>
                               <span className="text-[10px] text-slate-400 block font-mono">
-                                {tx.date} &middot; {tx.category}
+                                {tx.category ? `${formatTxDate(tx.date, now)} · ${tx.category}` : formatTxDate(tx.date, now)}
                               </span>
                             </div>
                           </div>
@@ -2704,7 +2715,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
                       <p className="text-xs text-slate-600 leading-relaxed">{notif.message}</p>
                       <span className="text-[10px] font-mono text-slate-400 block mt-2">
-                        {notif.timestamp}
+                        {notif.createdAt ? timeAgo(notif.createdAt, now) : notif.timestamp}
                       </span>
                     </div>
                   ))
@@ -5238,7 +5249,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
               </div>
               <div className="py-2 flex justify-between">
                 <span className="text-slate-500">Date &amp; Timestamp</span>
-                <span className="text-slate-700 font-mono">{selectedReceiptTx.date}</span>
+                <span className="text-slate-700 font-mono">{formatTxDate(selectedReceiptTx.date, now)}</span>
               </div>
               <div className="py-2 flex justify-between">
                 <span className="text-slate-500">Category</span>

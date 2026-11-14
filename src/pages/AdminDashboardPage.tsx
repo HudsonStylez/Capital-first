@@ -10,6 +10,7 @@ import {
   KycDocument,
 } from '../store/AdminStore';
 import { sendReceiptEmail } from '../lib/receiptEmail';
+import { formatDateTime } from '../lib/time';
 import {
   Users,
   CreditCard,
@@ -1873,7 +1874,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   ) : (
                     filteredLogs.map((l) => (
                       <tr key={l.id} className="hover:bg-slate-800/40">
-                        <td className="py-2.5 px-4 font-mono text-slate-400">{l.timestamp}</td>
+                        <td className="py-2.5 px-4 font-mono text-slate-400">{formatDateTime(l.timestamp)}</td>
                         <td className="py-2.5 px-4 font-mono font-bold text-sky-400">{l.action}</td>
                         <td className="py-2.5 px-4 text-slate-300">{l.details}</td>
                       </tr>
