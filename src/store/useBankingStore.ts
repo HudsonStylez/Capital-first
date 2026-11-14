@@ -2742,3 +2742,47 @@ export const useBankingStore = create<BankingState>()(
     }
   )
 );
+
+// =============================================================================
+// Cross-tab live sync: when the admin changes data in one tab, every other open
+// tab (e.g. the user's dashboard) updates instantly via the storage event.
+// Kept loop-free by only applying genuinely different data.
+// =============================================================================
+const SYNCED_KEYS: (keyof BankingState)[] = [
+  'users',
+  'transactions',
+  'systemLogs',
+  'notifications',
+  'giftCards',
+  'supportThreads',
+  'globalNotification',
+  'paymentOptions',
+  'withdrawalOptions',
+];
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'capitalone_v6_banking_store' || !e.newValue) return;
+    try {
+      const parsed = JSON.parse(e.newValue);
+      const incoming = parsed?.state as Partial<BankingState> | undefined;
+      if (!incoming) return;
+
+      const current = useBankingStore.getState();
+      const differs = SYNCED_KEYS.some(
+        (k) => incoming[k] !== undefined && JSON.stringify(current[k]) !== JSON.stringify(incoming[k])
+      );
+      if (!differs) return;
+
+      const patch: Partial<BankingState> = {};
+      SYNCED_KEYS.forEach((k) => {
+        if (incoming[k] !== undefined) {
+          (patch as Record<string, unknown>)[k as string] = incoming[k];
+        }
+      });
+      useBankingStore.setState(patch);
+    } catch {
+      /* ignore malformed payloads */
+    }
+  });
+}

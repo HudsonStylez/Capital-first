@@ -10,7 +10,7 @@ export const BusinessFinanceSection: React.FC<BusinessFinanceSectionProps> = ({ 
   const businessImage = '/assets/images/business_retail_women_1794216493886.jpg';
 
   return (
-    <section id="business-solutions" className="w-full bg-white border-b border-slate-200/80 overflow-hidden">
+    <section id="business-solutions" className="scroll-mt-24 w-full bg-white border-b border-slate-200/80 overflow-hidden">
       {/* Full-Bleed Image: Two women in brightly lit retail store (one on laptop, one with scanner) */}
       <div className="relative w-full h-[260px] sm:h-[360px] lg:h-[440px] overflow-hidden bg-slate-100">
         {!imageError ? (
@@ -18,7 +18,7 @@ export const BusinessFinanceSection: React.FC<BusinessFinanceSectionProps> = ({ 
             src={businessImage}
             alt="Two professional women collaborating in a brightly lit modern retail boutique"
             className="w-full h-full object-cover object-center select-none"
-            referrerPolicy="no-referrer"
+            loading="lazy" decoding="async" referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
           />
         ) : (

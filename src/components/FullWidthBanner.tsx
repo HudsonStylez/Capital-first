@@ -18,7 +18,7 @@ export const FullWidthBanner: React.FC<FullWidthBannerProps> = ({ onExploreAllCa
             src={bannerImagePath}
             alt="Hand holding smartphone with digital card and four colorful credit cards floating on light blue background"
             className="w-full h-full object-cover object-center select-none"
-            referrerPolicy="no-referrer"
+            loading="lazy" decoding="async" referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
           />
         ) : (

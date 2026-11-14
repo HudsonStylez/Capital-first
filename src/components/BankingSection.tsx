@@ -17,7 +17,7 @@ export const BankingSection: React.FC<BankingSectionProps> = ({ onOpenAccount })
   const difference1Yr = earnedCapitalOne1Yr - earnedNational1Yr;
 
   return (
-    <section id="banking" className="py-12 px-4 bg-white border-b border-slate-200/80">
+    <section id="banking" className="scroll-mt-24 py-12 px-4 bg-white border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>

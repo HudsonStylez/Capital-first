@@ -24,7 +24,7 @@ export const AutoNavigatorSection: React.FC<AutoNavigatorSectionProps> = ({ onPr
         );
 
   return (
-    <section id="auto" className="py-12 px-4 bg-slate-50 border-b border-slate-200/80">
+    <section id="auto" className="scroll-mt-24 py-12 px-4 bg-slate-50 border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
@@ -54,7 +54,7 @@ export const AutoNavigatorSection: React.FC<AutoNavigatorSectionProps> = ({ onPr
                 src="/assets/images/auto_navigator_car_1794203770230.jpg"
                 alt="Modern blue SUV on scenic mountain overlook"
                 className="w-full h-full object-cover object-center"
-                referrerPolicy="no-referrer"
+                loading="lazy" decoding="async" referrerPolicy="no-referrer"
               />
               <div className="img-glass" />
               <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1.5">

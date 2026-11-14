@@ -58,7 +58,7 @@ export const FeatureFunnelRows: React.FC<FeatureFunnelRowsProps> = ({
                 src={row.image}
                 alt={row.alt}
                 className="w-full h-full object-contain select-none"
-                referrerPolicy="no-referrer"
+                loading="lazy" decoding="async" referrerPolicy="no-referrer"
               />
             </div>
 

@@ -125,7 +125,7 @@ export const CreditCardsShowcase: React.FC<CreditCardsShowcaseProps> = ({
   const comparedCardObjects = cards.filter((c) => selectedForCompare.includes(c.id));
 
   return (
-    <section id="cards" className="py-12 px-4 bg-slate-50 border-b border-slate-200/80">
+    <section id="cards" className="scroll-mt-24 py-12 px-4 bg-slate-50 border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-8">
@@ -207,7 +207,7 @@ export const CreditCardsShowcase: React.FC<CreditCardsShowcaseProps> = ({
                         src={card.image}
                         alt={card.name}
                         className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                        referrerPolicy="no-referrer"
+                        loading="lazy" decoding="async" referrerPolicy="no-referrer"
                       />
                     )}
                   </div>
