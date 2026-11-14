@@ -94,6 +94,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     giftCards,
     processGiftCardPayment,
     updateGiftCardStatus,
+    updateGiftCardRate,
+    resetDemoData,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -105,6 +107,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [txSearch, setTxSearch] = useState('');
   const [toastNotice, setToastNotice] = useState<string | null>(null);
   const [selectedUserForCards, setSelectedUserForCards] = useState<User | null>(null);
+
+  // Gift card admin state
+  const [giftRateDrafts, setGiftRateDrafts] = useState<Record<string, string>>({});
+  const [convertingGiftId, setConvertingGiftId] = useState<string | null>(null);
 
   // Edit User Modal State
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -465,7 +471,26 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </span>
             </button>
 
-            {/* 6. System Logs */}
+            {/* 6. Gift Cards */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('gift-cards')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'gift-cards'
+                  ? 'bg-[#005C9D] text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Gift Cards</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">
+                {giftCards.length}
+              </span>
+            </button>
+
+            {/* 7. System Logs */}
             <button
               type="button"
               onClick={() => setActiveTab('logs')}
@@ -530,6 +555,16 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             <button
               type="button"
               onClick={() => {
+                resetDemoData();
+                showToast('Demo data restored — all sample users, accounts, and activity reloaded.');
+              }}
+              className="w-full py-1.5 px-2 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 text-[11px] font-semibold rounded cursor-pointer"
+            >
+              Restore Demo Data
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 clearAllData();
                 showToast('All users, logs, and transactions reset to zero.');
               }}
@@ -552,6 +587,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {activeTab === 'payment-settings' && 'Payment, Transfer & Disclaimer Settings'}
               {activeTab === 'notifications' && 'System Notifications Broadcast'}
               {activeTab === 'logs' && 'System Action Audit Log'}
+              {activeTab === 'gift-cards' && 'Gift Card Conversion & Redemption Control'}
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
               Live administrative command center with real-time consumer state synchronization.
@@ -1317,6 +1353,182 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB: GIFT CARDS — CONVERSION & REDEMPTION CONTROL
+            ======================================================== */}
+        {activeTab === 'gift-cards' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Total Gift Cards', value: giftCards.length, color: 'text-white' },
+                { label: 'Pending Review', value: giftCards.filter((g) => g.status === 'pending').length, color: 'text-amber-300' },
+                { label: 'Approved', value: giftCards.filter((g) => g.status === 'approved').length, color: 'text-emerald-300' },
+                { label: 'Redeemed', value: giftCards.filter((g) => g.status === 'redeemed').length, color: 'text-sky-300' },
+              ].map((s) => (
+                <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">{s.label}</p>
+                  <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white">Gift Card Conversion Control</h3>
+                <p className="text-xs text-slate-400">
+                  Approve, set the USD conversion rate, and redeem customer gift cards. Redemption credits the customer's account instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {giftCards.length === 0 && (
+                <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-8 text-center text-slate-400 text-sm">
+                  No gift cards submitted yet.
+                </div>
+              )}
+              {giftCards.map((g) => {
+                const owner = users.find((u) => u.id === g.userId);
+                const ownerName = owner ? `${owner.firstName} ${owner.lastName}` : 'Unknown User';
+                const rateDraft = giftRateDrafts[g.id] ?? String(g.usdConversionRate);
+                const projectedUsd = (Math.max(0, g.remainingBalance) * (parseFloat(rateDraft) || 0)).toFixed(2);
+                const statusStyle =
+                  g.status === 'approved'
+                    ? 'bg-emerald-900/50 text-emerald-300 border-emerald-700'
+                    : g.status === 'pending'
+                    ? 'bg-amber-900/50 text-amber-300 border-amber-700'
+                    : g.status === 'redeemed'
+                    ? 'bg-sky-900/50 text-sky-300 border-sky-700'
+                    : 'bg-red-900/50 text-red-300 border-red-700';
+                return (
+                  <div key={g.id} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-600/40 flex items-center justify-center shrink-0">
+                          <Sparkles className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-bold text-white">{g.cardName}</span>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusStyle}`}>
+                              {g.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {ownerName} · •••• {g.last4} · Card {g.cardNumber}
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Original ${g.originalBalance.toFixed(2)} · Remaining ${g.remainingBalance.toFixed(2)}
+                          </p>
+                          {g.adminNote && (
+                            <p className="text-[11px] text-slate-400 italic mt-1">Note: {g.adminNote}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-stretch md:items-end gap-2 min-w-[220px]">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold whitespace-nowrap">
+                            USD Rate
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={rateDraft}
+                            onChange={(e) =>
+                              setGiftRateDrafts((prev) => ({ ...prev, [g.id]: e.target.value }))
+                            }
+                            disabled={g.status === 'redeemed' || g.status === 'rejected'}
+                            className="w-24 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#005C9D] disabled:opacity-50"
+                          />
+                          <span className="text-xs text-emerald-300 font-semibold whitespace-nowrap">
+                            ≈ ${projectedUsd}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap md:justify-end">
+                          {g.status !== 'redeemed' && g.status !== 'rejected' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateGiftCardRate(g.id, parseFloat(rateDraft) || 0);
+                                showToast(`Conversion rate updated for ${g.cardName}.`);
+                              }}
+                              className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-semibold rounded cursor-pointer"
+                            >
+                              Save Rate
+                            </button>
+                          )}
+                          {g.status === 'pending' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateGiftCardStatus(g.id, 'approved');
+                                  showToast(`${g.cardName} approved.`);
+                                }}
+                                className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-semibold rounded cursor-pointer flex items-center gap-1"
+                              >
+                                <Check className="w-3 h-3" /> Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateGiftCardStatus(g.id, 'rejected');
+                                  showToast(`${g.cardName} rejected.`);
+                                }}
+                                className="px-2.5 py-1.5 bg-red-800 hover:bg-red-700 text-white text-[11px] font-semibold rounded cursor-pointer flex items-center gap-1"
+                              >
+                                <Ban className="w-3 h-3" /> Reject
+                              </button>
+                            </>
+                          )}
+                          {g.status === 'approved' && (
+                            <button
+                              type="button"
+                              disabled={convertingGiftId === g.id}
+                              onClick={async () => {
+                                setConvertingGiftId(g.id);
+                                const rate = parseFloat(rateDraft) || g.usdConversionRate || 1;
+                                const ok = await processGiftCardPayment(
+                                  g.userId,
+                                  g.cardName,
+                                  g.cardNumber,
+                                  g.remainingBalance,
+                                  rate
+                                );
+                                setConvertingGiftId(null);
+                                showToast(ok ? `${g.cardName} redeemed — $${projectedUsd} credited.` : 'Redemption failed.');
+                              }}
+                              className="px-2.5 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white text-[11px] font-semibold rounded cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                            >
+                              <DollarSign className="w-3 h-3" />
+                              {convertingGiftId === g.id ? 'Converting…' : 'Convert & Redeem'}
+                            </button>
+                          )}
+                          {(g.status === 'redeemed' || g.status === 'rejected') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateGiftCardStatus(g.id, 'pending');
+                                showToast(`${g.cardName} returned to pending review.`);
+                              }}
+                              className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-semibold rounded cursor-pointer flex items-center gap-1"
+                            >
+                              <RotateCcw className="w-3 h-3" /> Reopen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

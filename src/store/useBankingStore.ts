@@ -403,6 +403,7 @@ export interface BankingState {
   ) => Promise<boolean>;
 
   updateGiftCardStatus: (giftCardId: string, status: 'pending' | 'approved' | 'redeemed' | 'rejected', adminNote?: string) => boolean;
+  updateGiftCardRate: (giftCardId: string, usdRate: number) => void;
   updateUserProfile: (
     userId: string,
     updates: Partial<User>
@@ -956,6 +957,20 @@ export const useBankingStore = create<BankingState>()(
           }),
         }));
         return updated;
+      },
+
+      updateGiftCardRate: (giftCardId: string, usdRate: number) => {
+        set((state) => ({
+          giftCards: state.giftCards.map((g) =>
+            g.id === giftCardId
+              ? {
+                  ...g,
+                  usdConversionRate: usdRate,
+                  convertedAmount: Math.max(0, g.remainingBalance) * (usdRate || 1),
+                }
+              : g
+          ),
+        }));
       },
 
       processPayment: async (userId, accountId, amount, paymentOptionName, details) => {
