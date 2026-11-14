@@ -4163,27 +4163,35 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center">
+                    <label className="p-3 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center cursor-pointer hover:border-[#005C9D] transition-colors">
                       <FileText className="w-6 h-6 text-slate-400 mx-auto mb-1" />
                       <span className="font-bold text-[11px] text-slate-800 block">ID Front Side</span>
+                      <span className="text-[10px] text-slate-500 block truncate mt-1">
+                        {kycIdFrontFile || 'Tap to capture or upload'}
+                      </span>
                       <input
-                        type="text"
-                        value={kycIdFrontFile}
-                        onChange={(e) => setKycIdFrontFile(e.target.value)}
-                        className="mt-1.5 w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded text-center font-mono truncate"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && setKycIdFrontFile(e.target.files[0].name)}
                       />
-                    </div>
+                    </label>
 
-                    <div className="p-3 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center">
+                    <label className="p-3 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center cursor-pointer hover:border-[#005C9D] transition-colors">
                       <FileText className="w-6 h-6 text-slate-400 mx-auto mb-1" />
                       <span className="font-bold text-[11px] text-slate-800 block">ID Back / Barcode</span>
+                      <span className="text-[10px] text-slate-500 block truncate mt-1">
+                        {kycIdBackFile || 'Tap to capture or upload'}
+                      </span>
                       <input
-                        type="text"
-                        value={kycIdBackFile}
-                        onChange={(e) => setKycIdBackFile(e.target.value)}
-                        className="mt-1.5 w-full text-[10px] p-1.5 bg-white border border-slate-300 rounded text-center font-mono truncate"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && setKycIdBackFile(e.target.files[0].name)}
                       />
-                    </div>
+                    </label>
                   </div>
 
                   <div className="pt-2 flex justify-between items-center">
@@ -4243,17 +4251,21 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                     />
                   </div>
 
-                  <div className="p-3.5 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center">
+                  <label className="p-3.5 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center cursor-pointer hover:border-[#005C9D] transition-colors block">
                     <FileText className="w-7 h-7 text-slate-400 mx-auto mb-1" />
                     <span className="font-bold text-xs text-slate-800 block">Attached Utility Bill Document</span>
                     <span className="text-[10px] text-slate-500 block">Electric, Water, Gas, or Municipal Services Statement</span>
+                    <span className="mt-2 block text-[11px] font-mono text-slate-700 truncate">
+                      {kycUtilityFile || 'Tap to capture or upload'}
+                    </span>
                     <input
-                      type="text"
-                      value={kycUtilityFile}
-                      onChange={(e) => setKycUtilityFile(e.target.value)}
-                      className="mt-2 w-full text-xs p-2 bg-white border border-slate-300 rounded text-center font-mono"
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && setKycUtilityFile(e.target.files[0].name)}
                     />
-                  </div>
+                  </label>
 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 space-y-1">
                     <div className="flex items-center justify-between font-semibold text-slate-800">
