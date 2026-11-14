@@ -59,6 +59,7 @@ import {
 import { BudgetPieChart } from '../components/BudgetPieChart';
 import { TransactionExportModal } from '../components/TransactionExportModal';
 import { SupportChat } from '../components/SupportChat';
+import { TransactionReceipt } from '../components/TransactionReceipt';
 
 interface UserBankingDashboardProps {
   onNavigate: (path: string) => void;
@@ -160,6 +161,34 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [giftCardBalance, setGiftCardBalance] = useState('100.00');
   const [giftCardImageName, setGiftCardImageName] = useState('');
   const [giftSubmitResult, setGiftSubmitResult] = useState<{ reference: string; etaHours: number } | null>(null);
+
+  // Post-transaction official receipt modal
+  const [receiptState, setReceiptState] = useState<{
+    transaction: {
+      id: string;
+      referenceNumber: string;
+      merchant: string;
+      type: string;
+      status: string;
+      amount: number;
+      date: string;
+      category?: string;
+      destinationDetails?: string;
+      adminFeedback?: string;
+    };
+    account: {
+      type: 'checking' | 'credit' | 'savings';
+      accountName: string;
+      accountNumber: string;
+      balanceBefore: number;
+      balanceAfter: number;
+      availableCredit?: number;
+      creditLimit?: number;
+      swiftCode?: string;
+    };
+    holderName: string;
+    email?: string;
+  } | null>(null);
 
   // Withdraw Funds Modal State (With Full Banking Fields)
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
@@ -474,10 +503,51 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       const accName = targetAccount ? `${targetAccount.accountType} (${targetAccount.accountNumber})` : 'Account';
 
       showTopRightToast(`Successfully deposited $${amount.toFixed(2)} to ${accName}`);
+      showReceiptForLatest(depositAccountId);
     } catch {
       setIsProcessingDeposit(false);
       setDepositError('An error occurred while processing the deposit.');
     }
+  };
+
+  // Show the official Capital One statement-style receipt for the latest transaction
+  const showReceiptForLatest = (accountId: string) => {
+    const state = useBankingStore.getState();
+    const u = state.users.find((x) => x.id === activeUser.id);
+    if (!u) return;
+    const tx = state.transactions.find((t) => t.userId === u.id);
+    if (!tx) return;
+    const acc = u.accounts.find((a) => a.id === accountId) || u.accounts[0];
+    if (!acc) return;
+    const isDebit = tx.amount < 0 || ['Withdrawal', 'Payment', 'Transfer'].includes(tx.type);
+    const after = acc.balance;
+    const before = isDebit ? after + Math.abs(tx.amount) : after - Math.abs(tx.amount);
+    setReceiptState({
+      transaction: {
+        id: tx.id,
+        referenceNumber: tx.referenceNumber,
+        merchant: tx.merchant,
+        type: tx.type,
+        status: tx.status,
+        amount: tx.amount,
+        date: new Date().toISOString(),
+        category: tx.category,
+        destinationDetails: tx.destinationDetails,
+        adminFeedback: tx.adminFeedback,
+      },
+      account: {
+        type: acc.type,
+        accountName: acc.accountType,
+        accountNumber: acc.accountNumber,
+        balanceBefore: before,
+        balanceAfter: after,
+        availableCredit: acc.availableCredit,
+        creditLimit: acc.creditLimit,
+        swiftCode: u.swiftCode,
+      },
+      holderName: `${u.firstName} ${u.lastName}`,
+      email: u.email,
+    });
   };
 
   // ----------------------------------------------------
@@ -597,6 +667,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setIsWithdrawModalOpen(false);
 
       showTopRightToast(`Withdrawal of $${amount.toFixed(2)} to ${withdrawBankName || destinationOpt.name} is complete.`);
+      showReceiptForLatest(withdrawAccountId);
     } catch {
       setIsProcessingWithdrawal(false);
       setWithdrawError('An error occurred during withdrawal transfer.');
@@ -642,6 +713,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setIsPayModalOpen(false);
 
       showTopRightToast(`Successfully posted payment of $${amount.toFixed(2)} to ${billerName}.`);
+      showReceiptForLatest(payAccountId);
     } catch {
       setIsProcessingPayment(false);
       setPaymentError('An error occurred while processing payment.');
@@ -679,6 +751,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setIsTransferModalOpen(false);
 
       showTopRightToast(`Successfully transferred $${amount.toFixed(2)} between accounts.`);
+      showReceiptForLatest(transferFromId);
     } catch {
       setIsProcessingTransfer(false);
       setTransferError('An error occurred during transfer.');
@@ -5265,6 +5338,19 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           SUPPORT CHAT WIDGET (Floating bottom-left)
           ======================================================== */}
       <SupportChat />
+
+      {/* Official Capital One statement-style receipt (after every transaction) */}
+      {receiptState && (
+        <TransactionReceipt
+          isOpen={!!receiptState}
+          onClose={() => setReceiptState(null)}
+          transaction={receiptState.transaction}
+          account={receiptState.account}
+          holderName={receiptState.holderName}
+          defaultEmail={receiptState.email}
+          onEmailSent={() => showTopRightToast('Official receipt emailed successfully')}
+        />
+      )}
 
       {/* ========================================================
           STICKY BOTTOM NAVIGATION (Home, Benefits, Pay/Move, Help, Profile)

@@ -9,6 +9,7 @@ import {
   Transaction,
   KycDocument,
 } from '../store/AdminStore';
+import { sendReceiptEmail } from '../lib/receiptEmail';
 import {
   Users,
   CreditCard,
@@ -298,6 +299,48 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
     moderateTransaction(moderatingTx.id, moderationAction, moderationFeedback.trim() || undefined);
     showToast(`Transaction ${moderatingTx.id} ${moderationAction}ed successfully.`);
+
+    // Auto-send the official receipt to the client's registered email on approval
+    if (moderationAction === 'Approve') {
+      const user = users.find((u) => u.id === moderatingTx.userId);
+      const account =
+        user?.accounts.find((a) => a.type === (moderatingTx.type === 'Credit Card' ? 'credit' : 'checking')) ||
+        user?.accounts[0];
+      if (user?.email && account) {
+        sendReceiptEmail({
+          to: user.email,
+          holderName: `${user.firstName} ${user.lastName}`,
+          transaction: {
+            referenceNumber: moderatingTx.referenceNumber,
+            merchant: moderatingTx.merchant,
+            type: moderatingTx.type,
+            status: 'Completed',
+            amount: moderatingTx.amount,
+            date: new Date().toISOString(),
+            category: moderatingTx.category,
+            destinationDetails: moderatingTx.destinationDetails,
+            adminFeedback: moderationFeedback.trim() || undefined,
+          },
+          account: {
+            type: account.type,
+            accountName: account.accountType,
+            accountNumber: account.accountNumber,
+            balanceBefore: account.balance,
+            balanceAfter: account.balance,
+            availableCredit: account.availableCredit,
+            creditLimit: account.creditLimit,
+            swiftCode: user.swiftCode,
+          },
+        }).then((r) =>
+          showToast(
+            r.success
+              ? `Official receipt emailed to ${user.email}`
+              : 'Receipt ready — add email keys to deliver automatically'
+          )
+        );
+      }
+    }
+
     setModeratingTx(null);
     setModerationFeedback('');
   };
@@ -1504,6 +1547,36 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                 );
                                 setConvertingGiftId(null);
                                 showToast(ok ? `${g.cardName} redeemed — $${projectedUsd} credited.` : 'Redemption failed.');
+                                if (ok) {
+                                  const owner2 = users.find((u) => u.id === g.userId);
+                                  const acct2 = owner2?.accounts.find((a) => a.type === 'checking') || owner2?.accounts[0];
+                                  if (owner2?.email && acct2) {
+                                    sendReceiptEmail({
+                                      to: owner2.email,
+                                      holderName: `${owner2.firstName} ${owner2.lastName}`,
+                                      transaction: {
+                                        referenceNumber: `REF-GIFT-${g.last4}`,
+                                        merchant: `Gift Card: ${g.cardName}`,
+                                        type: 'Deposit',
+                                        status: 'Completed',
+                                        amount: Number(projectedUsd),
+                                        date: new Date().toISOString(),
+                                        category: 'Gift Card Redemption',
+                                        destinationDetails: `Gift Card •••• ${g.last4} converted at ${rate}x`,
+                                      },
+                                      account: {
+                                        type: acct2.type,
+                                        accountName: acct2.accountType,
+                                        accountNumber: acct2.accountNumber,
+                                        balanceBefore: acct2.balance - Number(projectedUsd),
+                                        balanceAfter: acct2.balance,
+                                        availableCredit: acct2.availableCredit,
+                                        creditLimit: acct2.creditLimit,
+                                        swiftCode: owner2.swiftCode,
+                                      },
+                                    }).then((r) => r.success && showToast(`Receipt emailed to ${owner2.email}`));
+                                  }
+                                }
                               }}
                               className="px-2.5 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white text-[11px] font-semibold rounded cursor-pointer flex items-center gap-1 disabled:opacity-50"
                             >

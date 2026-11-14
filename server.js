@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import { buildReceiptHTML } from './src/lib/receiptTemplate.js';
 
 // Load environment variables
 dotenv.config();
@@ -74,19 +75,39 @@ app.post('/api/send-receipt', async (req, res) => {
       subject,
       transaction,
       account,
+      holderName,
+      receiptData,
     } = req.body;
 
-    if (!to || !subject || !transaction || !account) {
+    if (!to || !subject || !transaction) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Send the email
+    const acct = account || {};
+    const data = receiptData || {
+      holderName: holderName || 'Capital One Customer',
+      transaction,
+      account: {
+        accountName: acct.accountName || (acct.type === 'credit' ? 'Capital One Platinum Mastercard' : '360 Checking'),
+        accountType: acct.type,
+        last4: (acct.accountNumber || '').slice(-4) || '0000',
+        swiftCode: acct.swiftCode,
+      },
+      balances: {
+        before: acct.balanceBefore ?? transaction.amount,
+        after: acct.balanceAfter ?? transaction.amount,
+        creditLimit: acct.creditLimit,
+        availableCredit: acct.availableCredit,
+      },
+    };
+
+    // Send the email using the shared statement-style template
     const info = await transporter.sendMail({
       from: `Capital One <no-reply@capitalone.com>`,
       to,
       subject,
-      html: generateReceiptEmailHTML(transaction, account),
-      text: generateReceiptEmailText(transaction, account),
+      html: buildReceiptHTML(data),
+      text: generateReceiptEmailText(transaction, account || {}),
     });
 
     res.json({
