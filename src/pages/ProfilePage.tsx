@@ -31,15 +31,22 @@ import {
   Hash,
   Search,
   Scan,
+  MonitorSmartphone,
+  LogIn,
 } from 'lucide-react';
 import { FaceIdVerificationModal } from '../components/FaceIdVerificationModal';
+import { timeAgo, formatDateTime } from '../lib/time';
+import { useNow } from '../hooks/useNow';
 
 interface ProfilePageProps {
   onNavigate: (path: string) => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
-  const { currentUser, updateUserProfile, changePassword, logout, updateClientAccountNumbers } = useAdminStore();
+  const { currentUser, updateUserProfile, changePassword, logout, updateClientAccountNumbers, systemLogs } =
+    useAdminStore();
+
+  const now = useNow();
 
   if (!currentUser) {
     return (
@@ -1052,6 +1059,48 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                     />
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Recent Logins & Security Activity */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <MonitorSmartphone className="w-4 h-4 text-[#005C9D]" />
+                  <span className="text-xs font-bold text-slate-900">Recent Logins &amp; Security Activity</span>
+                </div>
+                <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live
+                </span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {systemLogs
+                  .filter(
+                    (l) =>
+                      l.userId === currentUser.id &&
+                      ['LOGIN', 'LOGOUT', 'LOCK', 'UNLOCK', 'PASSWORD_RESET', 'PROFILE_UPDATE', 'KYC_REVIEW', 'VIRTUAL_CARD', 'SETTINGS_UPDATE'].includes(
+                        l.action
+                      )
+                  )
+                  .slice(0, 6)
+                  .map((l) => (
+                    <div key={l.id} className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0">
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 text-[#005C9D] flex items-center justify-center shrink-0">
+                        {l.action === 'LOGIN' ? <LogIn className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[11px] font-bold text-slate-800 block">{l.action.replace(/_/g, ' ')}</span>
+                        <span className="text-[11px] text-slate-500 block truncate">{l.details}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 shrink-0" title={formatDateTime(l.timestamp)}>
+                        {timeAgo(l.timestamp, now)}
+                      </span>
+                    </div>
+                  ))}
+                {systemLogs.filter((l) => l.userId === currentUser.id).length === 0 && (
+                  <p className="text-[11px] text-slate-400 py-2">No recent security activity.</p>
+                )}
               </div>
             </div>
           </div>

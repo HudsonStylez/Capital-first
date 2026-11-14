@@ -61,6 +61,7 @@ import { TransactionExportModal } from '../components/TransactionExportModal';
 import { SupportChat } from '../components/SupportChat';
 import { TransactionReceipt } from '../components/TransactionReceipt';
 import { ShareButton } from '../components/ShareButton';
+import { LiveActivityToast } from '../components/LiveActivityToast';
 import { formatTxDate, timeAgo } from '../lib/time';
 import { useNow } from '../hooks/useNow';
 
@@ -5421,6 +5422,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
       {/* Share the app (works inside the installed PWA / native wrapper too) */}
       <ShareButton variant="fab" />
+
+      {/* Live "new activity" toast for incoming transactions */}
+      <LiveActivityToast />
 
       {/* Official Capital One statement-style receipt (after every transaction) */}
       {receiptState && (
