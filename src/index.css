@@ -148,6 +148,73 @@
 .dark .text-\[\#666666\] { color: #94a3b8; }
 .dark .bg-\[\#F4F6F8\] { background-color: #0b1220; }
 
+/* =============================================================================
+   ADMIN LIGHT THEME (scoped via .admin-light)
+   Converts the admin console palette to the white theme without touching markup.
+   ============================================================================= */
+.admin-light { background-color: #f1f5f9; color: #0f172a; }
+
+.admin-light .bg-slate-950 { background-color: #f1f5f9; }
+.admin-light .bg-slate-900 { background-color: #ffffff; }
+.admin-light .bg-slate-800 { background-color: #f1f5f9; }
+.admin-light .bg-slate-700 { background-color: #e2e8f0; }
+.admin-light .bg-slate-800\/50 { background-color: rgba(241, 245, 249, 0.7); }
+.admin-light .bg-slate-800\/60 { background-color: rgba(241, 245, 249, 0.8); }
+.admin-light .bg-slate-800\/40 { background-color: rgba(241, 245, 249, 0.6); }
+.admin-light .bg-slate-700\/70 { background-color: rgba(226, 232, 240, 0.8); }
+.admin-light .bg-slate-700\/40 { background-color: rgba(226, 232, 240, 0.6); }
+
+.admin-light .border-slate-800 { border-color: #e2e8f0; }
+.admin-light .border-slate-700 { border-color: #cbd5e1; }
+.admin-light .border-slate-600 { border-color: #cbd5e1; }
+
+.admin-light .text-white { color: #0f172a; }
+.admin-light .text-slate-100 { color: #0f172a; }
+.admin-light .text-slate-200 { color: #1e293b; }
+.admin-light .text-slate-300 { color: #334155; }
+.admin-light .text-slate-400 { color: #475569; }
+
+.admin-light .text-sky-400,
+.admin-light .text-sky-300 { color: #0369a1; }
+.admin-light .text-emerald-400 { color: #059669; }
+.admin-light .text-emerald-300 { color: #047857; }
+.admin-light .text-red-400,
+.admin-light .text-red-300 { color: #dc2626; }
+.admin-light .text-amber-300,
+.admin-light .text-amber-400 { color: #b45309; }
+.admin-light .text-purple-300 { color: #7e22ce; }
+
+.admin-light .bg-sky-950 { background-color: #e0f2fe; }
+.admin-light .bg-emerald-950\/40,
+.admin-light .bg-emerald-950\/60 { background-color: #ecfdf5; }
+.admin-light .bg-red-950\/40,
+.admin-light .bg-red-950\/70 { background-color: #fef2f2; }
+.admin-light .bg-amber-950\/40,
+.admin-light .bg-amber-950\/70 { background-color: #fffbeb; }
+.admin-light .bg-purple-950\/40 { background-color: #faf5ff; }
+
+.admin-light .hover\:bg-slate-800:hover { background-color: #e2e8f0; }
+.admin-light .hover\:bg-slate-700:hover { background-color: #cbd5e1; }
+.admin-light .hover\:text-white:hover { color: #0f172a; }
+
+/* Keep white text on colored / brand backgrounds (declared last so it wins) */
+.admin-light .bg-\[\#005C9D\],
+.admin-light .bg-\[\#00487D\],
+.admin-light .bg-sky-600,
+.admin-light .bg-sky-700,
+.admin-light .bg-emerald-600,
+.admin-light .bg-emerald-700,
+.admin-light .bg-red-600,
+.admin-light .bg-red-700,
+.admin-light .bg-red-800,
+.admin-light .bg-amber-600,
+.admin-light .bg-amber-700,
+.admin-light .bg-purple-600,
+.admin-light .bg-purple-700 { color: #ffffff; }
+
+/* The single slate gradient card becomes a light surface */
+.admin-light .from-slate-800 { background-image: linear-gradient(135deg, #eef2f7, #e2e8f0); }
+
 /* High Contrast Mode (toggled via FloatingMegaphone -> contrast-125) */
 .contrast-125 .bg-white { background-color: #ffffff; }
 .contrast-125 .bg-slate-50 { background-color: #f8fafc; }

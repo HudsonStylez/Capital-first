@@ -203,7 +203,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+      <div className="admin-light min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Admin Authorization Required</h2>
@@ -436,7 +436,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans selection:bg-[#005C9D] selection:text-white">
+    <div className="admin-light min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans selection:bg-[#005C9D] selection:text-white">
       {/* ========================================================
           ADMIN SIDEBAR LAYOUT
           ======================================================== */}
@@ -449,7 +449,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               className="cursor-pointer hover:opacity-85 transition-opacity"
               title="Return to Consumer Banking"
             >
-              <CapitalOneLogo variant="light" className="h-7" />
+              <CapitalOneLogo className="h-7" />
             </button>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800 font-bold">
               ADMIN CENTER
@@ -780,9 +780,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xs">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto shadow-xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-300">
+                  <table className="w-full min-w-[640px] text-left text-xs text-slate-300">
                     <thead className="bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
                       <tr>
                         <th className="py-3 px-4">Customer Name</th>
@@ -1001,9 +1001,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
+                <table className="w-full min-w-[640px] text-left text-xs text-slate-300">
                   <thead className="bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
                     <tr>
                       <th className="py-3 px-4">TX ID / REF</th>
@@ -1203,8 +1203,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </p>
               </div>
             ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xs">
-                <table className="w-full text-left text-xs text-slate-300">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto shadow-xs">
+                <table className="w-full min-w-[640px] text-left text-xs text-slate-300">
                   <thead className="bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
                     <tr>
                       <th className="py-3 px-4">User</th>
@@ -1770,7 +1770,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
         {activeTab === 'support' && (
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
             {/* Thread list */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-x-auto">
               <div className="px-4 py-3 border-b border-slate-700">
                 <h3 className="text-sm font-bold text-white">Conversations</h3>
                 <p className="text-[11px] text-slate-400">{supportThreads.length} total</p>
@@ -1921,8 +1921,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-              <table className="w-full text-left text-xs text-slate-300">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-xs text-slate-300">
                 <thead className="bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
                   <tr>
                     <th className="py-3 px-4">Timestamp</th>
