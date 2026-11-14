@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "server": "node server.js",
+    "generate:icons": "node scripts/generate-icons.mjs",
     "deploy": "npx wrangler deploy",
     "deploy:init": "npx wrangler secret put SENDGRID_API_KEY && npx wrangler secret put MAILGUN_API_KEY && npx wrangler secret put MAILGUN_DOMAIN && npx wrangler secret put GEMINI_API_KEY"
   },

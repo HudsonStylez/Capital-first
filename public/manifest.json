@@ -1,16 +1,52 @@
 {
-  "name": "Capital One Mobile",
+  "id": "/",
+  "name": "Capital One Mobile & Web",
   "short_name": "Capital One",
   "version": "1.0.0",
+  "description": "Capital One mobile banking experience — credit cards, 360 checking, savings, auto navigator, credit monitoring, and more.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#FFFFFF",
   "theme_color": "#005C9D",
-  "orientation": "portrait",
-  "scope": "/",
-  "lang": "en",
-  "description": "Capital One mobile banking experience — credit cards, checking, savings, auto financing, and credit monitoring.",
-  "icons": [],
-  "categories": ["finance", "banking"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["finance", "banking", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Cards",
+      "short_name": "Cards",
+      "url": "/#/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Make a Payment",
+      "short_name": "Pay",
+      "url": "/#/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "screenshots": []
 }

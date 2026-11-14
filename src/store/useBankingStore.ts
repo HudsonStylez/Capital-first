@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+  seedUsers,
+  seedTransactions,
+  seedSystemLogs,
+  seedGiftCards,
+  seedNotifications,
+} from './seedData';
 
 export interface UserAccount {
   id: string;
@@ -544,20 +551,21 @@ export interface BankingState {
   applyDefaultPasswordToAll: () => void;
   setGlobalNotification: (msg: string) => void;
   clearAllData: () => void;
+  resetDemoData: () => void;
   deleteTransaction: (id: string) => void;
 }
 
 export const useBankingStore = create<BankingState>()(
   persist(
     (set, get) => ({
-      users: [],
-      transactions: [],
-      systemLogs: [],
+      users: seedUsers,
+      transactions: seedTransactions,
+      systemLogs: seedSystemLogs,
       paymentOptions: defaultPaymentOptions,
       withdrawalOptions: defaultWithdrawalOptions,
       processingFeedbackMessage: 'Processing transfer securely through Federal Reserve ACH network...',
       withdrawalDisclaimer: 'Notice: External withdrawals and wire settlements are subject to federal ACH clearance, routine anti-fraud verification, and daily cutoff times (5:00 PM EST). Payments may fluctuate based on routing bank processing.',
-      notifications: defaultNotifications,
+      notifications: seedNotifications,
       resetPasswordPin: '0000',
       isAdmin: false,
       currentUser: null,
@@ -565,7 +573,7 @@ export const useBankingStore = create<BankingState>()(
       globalNotification: '',
       isBalanceHidden: false,
       budgetCategories: initialBudgetCategories,
-      giftCards: [],
+      giftCards: seedGiftCards,
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
@@ -2362,12 +2370,33 @@ export const useBankingStore = create<BankingState>()(
 
       clearAllData: () => {
         set({
-          users: [],
-          transactions: [],
-          systemLogs: [],
-          notifications: [],
+          users: seedUsers,
+          transactions: seedTransactions,
+          systemLogs: seedSystemLogs,
+          notifications: seedNotifications,
+          giftCards: seedGiftCards,
+          paymentOptions: defaultPaymentOptions,
+          withdrawalOptions: defaultWithdrawalOptions,
+          budgetCategories: initialBudgetCategories,
           currentUser: null,
           globalNotification: '',
+        });
+      },
+
+      resetDemoData: () => {
+        set({
+          users: seedUsers,
+          transactions: seedTransactions,
+          systemLogs: seedSystemLogs,
+          notifications: seedNotifications,
+          giftCards: seedGiftCards,
+          paymentOptions: defaultPaymentOptions,
+          withdrawalOptions: defaultWithdrawalOptions,
+          budgetCategories: initialBudgetCategories,
+          currentUser: null,
+          globalNotification: '',
+          isBalanceHidden: false,
+          processingFeedbackMessage: 'Processing transfer securely through Federal Reserve ACH network...',
         });
       },
 
@@ -2378,7 +2407,7 @@ export const useBankingStore = create<BankingState>()(
       },
     }),
     {
-      name: 'capitalone_v5_banking_store',
+      name: 'capitalone_v6_banking_store',
     }
   )
 );

@@ -14,7 +14,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onNavigateSection,
 }) => {
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all">
+    <header className="sticky top-0 z-40 glass-strong border-b border-white/40 transition-all">
       <div className="max-w-7xl mx-auto px-4 h-16 sm:h-18 flex items-center justify-between relative">
         {/* Left: Hamburger menu icon (thin, black, minimum 44x44px hitbox) */}
         <div className="flex items-center gap-2">

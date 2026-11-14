@@ -152,6 +152,23 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Demo credentials helper */}
+            <button
+              type="button"
+              onClick={() => {
+                setUsername('demo');
+                setPassword('demo1234');
+                if (errorMessage) setErrorMessage(null);
+              }}
+              className="w-full glass-pill rounded-md px-3 py-2 text-left text-[11px] text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-between gap-2"
+            >
+              <span>
+                Demo access: <span className="font-mono font-semibold text-[#005C9D]">demo</span> /{' '}
+                <span className="font-mono font-semibold text-[#005C9D]">demo1234</span>
+              </span>
+              <span className="font-semibold text-[#005C9D] shrink-0">Autofill →</span>
+            </button>
+
             {/* Username Input with User Icon */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
