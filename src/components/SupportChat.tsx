@@ -1,182 +1,137 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useBankingStore } from '../store/useBankingStore';
-import { Send, User } from 'lucide-react';
-
-interface SupportChatMessage {
-  id: string;
-  sender: 'user' | 'admin';
-  text: string;
-  timestamp: string;
-  type?: 'chat' | 'system';
-}
+import { MessageCircle, X, Send, ShieldCheck, Headset } from 'lucide-react';
 
 export const SupportChat: React.FC = () => {
-  const { notifications, globalNotification, addNotification, markNotificationRead, markAllNotificationsRead } = useBankingStore();
-  const [activeChat, setActiveChat] = useState<SupportChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
+  const { currentUser, users, supportThreads, sendSupportMessage, markSupportThreadRead } = useBankingStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Get recent support tickets/chat sessions
-  const getSupportChats = () => {
-    // In a real app, this would fetch from backend
-    // For now, we simulate with existing notifications
-    return notifications.filter(n => n.unread || n.type === 'info');
-  };
+  const activeUser = users.find((u) => u.id === currentUser?.id) || currentUser;
 
-  const handleSendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const thread = useMemo(() => {
+    if (!activeUser) return undefined;
+    const mine = supportThreads.filter((t) => t.userId === activeUser.id);
+    return mine.find((t) => t.status === 'open') || mine[0];
+  }, [supportThreads, activeUser]);
 
-    const userMsg: SupportChatMessage = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      text: text.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
+  const messages = thread?.messages || [];
+  const unreadFromAdmin = messages.filter((m) => m.sender === 'admin' && !m.read).length;
 
-    setChatInput(text);
-    setActiveChat(prev => [...prev, userMsg]);
-
-    // Simulate admin response after 1-3 seconds
-    setTimeout(() => {
-      const adminMsg: SupportChatMessage = {
-        id: `admin-${Date.now()}`,
-        sender: 'admin',
-        text: `✅ Your request has been processed. Here are the details:`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: 'chat',
-      };
-
-      setActiveChat(prev => [...prev, adminMsg]);
-      setChatInput('');
-    }, Math.random() * 2000 + 1000);
-  };
-
-  const handleSendToAdmin = () => {
-    if (activeChat.length > 0) {
-      setActiveChat([]);
-      // In a real app, this would open a modal or navigate to admin chat
-      alert('Connected to admin support chat. Admin will respond shortly.');
+  useEffect(() => {
+    if (isOpen && thread) {
+      markSupportThreadRead(thread.id, 'user');
     }
-  };
+  }, [isOpen, thread?.id]);
 
-  const handleMarkRead = (id: string) => {
-    markNotificationRead(id);
-  };
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages.length, isOpen]);
 
-  const handleMarkAllRead = () => {
-    markAllNotificationsRead();
-  };
+  if (!activeUser) return null;
 
-  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setChatInput(e.target.value);
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    sendSupportMessage(activeUser.id, input, 'App Support');
+    setInput('');
   };
 
   return (
-    <div className="bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-4">
-      <h3 className="text-xl font-bold text-white mb-4">Support & Admin Chat</h3>
+    <>
+      {/* Floating launcher */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        className="fixed bottom-24 left-4 z-40 w-12 h-12 rounded-full glass-brand text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+        aria-label="Open support chat"
+      >
+        {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+        {!isOpen && unreadFromAdmin > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#DA291C] text-white text-[10px] font-bold flex items-center justify-center">
+            {unreadFromAdmin}
+          </span>
+        )}
+      </button>
 
-      {/* Notification Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold">
-            <span className="text-sky-400">A</span>
-          </div>
-          <div>
-            <h4 className="font-semibold text-white">Support Chat</h4>
-            <p className="text-slate-500 text-sm">You have 3 unread messages</p>
-          </div>
-        </div>
-        <button
-          onClick={handleSendToAdmin}
-          disabled={!activeChat}
-          className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <Send className="w-4 h-4" /> Connect to Admin
-        </button>
-      </div>
-
-      {/* Active Chat */}
-      {activeChat.length > 0 && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 mb-4">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold flex-shrink-0">
-              <User className="w-5 h-5" />
+      {isOpen && (
+        <div className="fixed bottom-40 left-4 z-40 w-[330px] max-w-[calc(100vw-2rem)] h-[440px] glass-strong rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/40 animate-in fade-in slide-in-from-bottom-3">
+          {/* Header */}
+          <div className="glass-brand px-4 py-3 flex items-center gap-3">
+            <div className="relative">
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                <Headset className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#005C9D]" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                <div>
-                  <div className="text-sm font-medium text-white">Admin Support</div>
-                  <div className="text-xs text-slate-500">Online</div>
-                </div>
-              </div>
-              <div className="text-sm text-white">Online</div>
+              <h3 className="text-sm font-bold text-white leading-none">Capital One Support</h3>
+              <p className="text-[11px] text-white/80 mt-0.5 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> Human agent · Online
+              </p>
             </div>
-            <div className="mt-2">
-              <p className="text-sm text-white">You are connected to an admin for support.</p>
-              <p className="text-xs text-slate-500">Your request is being processed...</p>
-            </div>
-          </div>
-          <div className="mt-4 space-y-3">
-            {activeChat.map((msg: SupportChatMessage) => (
-              <div key={msg.id} className={`flex items-start gap-3 ${msg.sender === 'admin' ? 'bg-sky-600/20' : 'bg-slate-800/50'}`}>
-                {msg.sender === 'admin' ? (
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                ) : (
-                  <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${msg.sender === 'admin' ? 'text-white' : 'text-slate-400'}`}>
-                    {msg.text}
-                  </p>
-                  <div className="text-xs text-slate-500">{msg.timestamp}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={handleSendToAdmin}
-              disabled={activeChat.length === 0}
-              className="flex-1 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Send Message
-            </button>
-            <button
-              onClick={handleMarkAllRead}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg text-xs font-medium transition-colors"
-            >
-              Mark as Read
+            <button type="button" onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white cursor-pointer" aria-label="Close">
+              <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-white/40">
+            {messages.length === 0 && (
+              <div className="text-center text-xs text-slate-500 mt-8 px-4">
+                <Headset className="w-8 h-8 mx-auto mb-2 text-[#005C9D]/60" />
+                You're chatting with a real Capital One specialist. Ask about transactions, gift cards, cards, or account security.
+              </div>
+            )}
+            {messages.map((m) => {
+              const isUser = m.sender === 'user';
+              return (
+                <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
+                    isUser
+                      ? 'bg-[#005C9D] text-white rounded-br-sm'
+                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm'
+                  }`}>
+                    {!isUser && <div className="text-[10px] font-bold text-[#005C9D] mb-0.5">{m.senderName}</div>}
+                    <p className="whitespace-pre-wrap">{m.text}</p>
+                    <div className={`text-[9px] mt-1 ${isUser ? 'text-white/70' : 'text-slate-400'}`}>{m.timestamp}</div>
+                  </div>
+                </div>
+              );
+            })}
+            {messages.length > 0 && messages[messages.length - 1].sender === 'user' && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-3 py-2 text-[11px] text-slate-500 italic">
+                  Support is reviewing your message…
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleSend} className="p-3 border-t border-white/50 bg-white/70 flex items-center gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message…"
+              className="flex-1 text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005C9D] bg-white"
+            />
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="w-9 h-9 rounded-xl bg-[#005C9D] hover:bg-[#00487D] disabled:opacity-40 text-white flex items-center justify-center cursor-pointer shrink-0"
+              aria-label="Send message"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       )}
-
-      {/* Unread Notifications */}
-      {notifications.length > 0 && (
-        <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4">
-          <h4 className="text-sm font-semibold text-white mb-3">Unread Notifications</h4>
-          <div className="space-y-2">
-            {notifications
-              .filter(n => n.unread)
-              .map(n => (
-                <div key={n.id} className="flex items-center gap-3 p-2 bg-slate-900/50 rounded-lg">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white">{n.title || n.message.substring(0, 30)}...</p>
-                    <p className="text-xs text-slate-500">{n.type || n.id}</p>
-                  </div>
-                  <button
-                    onClick={() => handleMarkRead(n.id)}
-                    className="text-xs text-slate-400 hover:text-white transition-colors"
-                  >
-                    Read
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-    </div>
+    </>
   );
 };
 

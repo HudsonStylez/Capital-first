@@ -97,11 +97,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     updateGiftCardStatus,
     updateGiftCardRate,
     resetDemoData,
+    supportThreads,
+    adminReplyToSupport,
+    markSupportThreadRead,
+    setSupportThreadStatus,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
-    'users' | 'transactions' | 'kyc' | 'payment-settings' | 'notifications' | 'logs' | 'gift-cards'
+    'users' | 'transactions' | 'kyc' | 'payment-settings' | 'notifications' | 'logs' | 'gift-cards' | 'support'
   >('users');
+
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [supportReply, setSupportReply] = useState('');
 
   const [userSearch, setUserSearch] = useState('');
   const [logSearch, setLogSearch] = useState('');
@@ -533,7 +540,26 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </span>
             </button>
 
-            {/* 7. System Logs */}
+            {/* 7. Support Chat */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('support')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'support'
+                  ? 'bg-[#005C9D] text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-4 h-4 text-sky-400" />
+                <span>Support Chat</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300">
+                {supportThreads.filter((t) => t.status === 'open').length}
+              </span>
+            </button>
+
+            {/* 8. System Logs */}
             <button
               type="button"
               onClick={() => setActiveTab('logs')}
@@ -631,6 +657,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {activeTab === 'notifications' && 'System Notifications Broadcast'}
               {activeTab === 'logs' && 'System Action Audit Log'}
               {activeTab === 'gift-cards' && 'Gift Card Conversion & Redemption Control'}
+              {activeTab === 'support' && 'Human Support — Live Client Conversations'}
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
               Live administrative command center with real-time consumer state synchronization.
@@ -1602,6 +1629,141 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB: HUMAN SUPPORT — LIVE CLIENT CONVERSATIONS
+            ======================================================== */}
+        {activeTab === 'support' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
+            {/* Thread list */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-700">
+                <h3 className="text-sm font-bold text-white">Conversations</h3>
+                <p className="text-[11px] text-slate-400">{supportThreads.length} total</p>
+              </div>
+              <div className="divide-y divide-slate-700/70 max-h-[560px] overflow-y-auto">
+                {supportThreads.length === 0 && (
+                  <div className="p-4 text-xs text-slate-400">No support conversations yet.</div>
+                )}
+                {supportThreads.map((t) => {
+                  const last = t.messages[t.messages.length - 1];
+                  const unread = t.messages.filter((m) => m.sender === 'user' && !m.read).length;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedThreadId(t.id);
+                        setSupportReply('');
+                        markSupportThreadRead(t.id, 'admin');
+                      }}
+                      className={`w-full text-left px-4 py-3 transition-colors cursor-pointer ${
+                        selectedThreadId === t.id ? 'bg-slate-700/70' : 'hover:bg-slate-700/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-white truncate">{t.userName}</span>
+                        {unread > 0 && (
+                          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#DA291C] text-white text-[10px] font-bold flex items-center justify-center">
+                            {unread}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5">{t.subject}</p>
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">{last?.text || ''}</p>
+                      <span
+                        className={`inline-block mt-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                          t.status === 'open' ? 'bg-emerald-900/50 text-emerald-300' : 'bg-slate-700 text-slate-300'
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Conversation pane */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl flex flex-col min-h-[420px]">
+              {!selectedThreadId ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm p-8">
+                  <MessageSquare className="w-10 h-10 mb-3 text-slate-600" />
+                  Select a conversation to reply as a human agent.
+                </div>
+              ) : (
+                (() => {
+                  const thread = supportThreads.find((t) => t.id === selectedThreadId);
+                  if (!thread) return null;
+                  return (
+                    <>
+                      <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-bold text-white">{thread.userName}</h3>
+                          <p className="text-[11px] text-slate-400">{thread.userEmail || 'No email on file'} · {thread.subject}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSupportThreadStatus(thread.id, thread.status === 'open' ? 'resolved' : 'open')
+                          }
+                          className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-semibold rounded cursor-pointer"
+                        >
+                          {thread.status === 'open' ? 'Mark Resolved' : 'Reopen'}
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {thread.messages.map((m) => {
+                          const isAdmin = m.sender === 'admin';
+                          return (
+                            <div key={m.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                              <div
+                                className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                                  isAdmin
+                                    ? 'bg-[#005C9D] text-white rounded-br-sm'
+                                    : 'bg-slate-700 text-slate-100 rounded-bl-sm'
+                                }`}
+                              >
+                                <div className="text-[10px] font-bold mb-0.5 opacity-80">{m.senderName}</div>
+                                <p className="whitespace-pre-wrap">{m.text}</p>
+                                <div className="text-[9px] mt-1 opacity-60">{m.timestamp}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (!supportReply.trim()) return;
+                          adminReplyToSupport(thread.id, supportReply.trim());
+                          setSupportReply('');
+                          showToast(`Reply sent to ${thread.userName}`);
+                        }}
+                        className="p-3 border-t border-slate-700 flex items-center gap-2"
+                      >
+                        <input
+                          type="text"
+                          value={supportReply}
+                          onChange={(e) => setSupportReply(e.target.value)}
+                          placeholder={`Reply to ${thread.userName}…`}
+                          className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!supportReply.trim()}
+                          className="px-4 py-2 bg-[#005C9D] hover:bg-[#00487D] disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Send className="w-3.5 h-3.5" /> Send
+                        </button>
+                      </form>
+                    </>
+                  );
+                })()
+              )}
             </div>
           </div>
         )}
