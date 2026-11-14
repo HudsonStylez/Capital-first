@@ -2716,7 +2716,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           onClick={() => setShowFirstDepositAlert(false)}
         >
           <div
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in zoom-in-95 text-center space-y-4"
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in zoom-in-95 text-center space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
@@ -2765,7 +2765,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           ======================================================== */}
       {isDepositModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-emerald-600" />
@@ -3481,7 +3481,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           ======================================================== */}
       {isPayModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-[#005C9D]" />
@@ -3635,7 +3635,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           ======================================================== */}
       {isTransferModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <Repeat className="w-5 h-5 text-purple-600" />
@@ -3884,7 +3884,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           ======================================================== */}
       {isCreateCardModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
                 <h3 className="font-bold text-slate-900 text-base">Select Virtual Card Edition</h3>
@@ -5240,7 +5240,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           onClick={() => setSelectedReceiptTx(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in zoom-in-95"
+            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Official Header */}
@@ -5359,7 +5359,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           onClick={() => setInspectingAccount(null)}
         >
           <div
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in zoom-in-95"
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
