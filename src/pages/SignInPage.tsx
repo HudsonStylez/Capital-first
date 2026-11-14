@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
 import { useAdminStore } from '../store/AdminStore';
 import {
@@ -30,6 +30,19 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
   const [passkeyNotice, setPasskeyNotice] = useState(false);
   const [infoNotice, setInfoNotice] = useState<string | null>(null);
 
+  // Prefill a previously saved username (user opted to save info for next login)
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('capitalone_saved_user');
+      if (savedUser) {
+        setUsername(savedUser);
+        setRememberMe(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -50,6 +63,17 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
             "The username or password you entered doesn't match our records. Please try again or use Forgot Username or Password."
         );
         return;
+      }
+
+      // Save or clear the login info for next time
+      try {
+        if (rememberMe) {
+          localStorage.setItem('capitalone_saved_user', username.trim());
+        } else {
+          localStorage.removeItem('capitalone_saved_user');
+        }
+      } catch {
+        /* ignore */
       }
 
       onNavigate('/dashboard');
@@ -152,23 +176,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Demo credentials helper */}
-            <button
-              type="button"
-              onClick={() => {
-                setUsername('demo');
-                setPassword('demo1234');
-                if (errorMessage) setErrorMessage(null);
-              }}
-              className="w-full glass-pill rounded-md px-3 py-2 text-left text-[11px] text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-between gap-2"
-            >
-              <span>
-                Demo access: <span className="font-mono font-semibold text-[#005C9D]">demo</span> /{' '}
-                <span className="font-mono font-semibold text-[#005C9D]">demo1234</span>
-              </span>
-              <span className="font-semibold text-[#005C9D] shrink-0">Autofill →</span>
-            </button>
-
             {/* Username Input with User Icon */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -223,7 +230,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* 16px "Remember Me" Checkbox */}
+            {/* Save info for next login checkbox */}
             <div className="flex items-center pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700">
                 <input
@@ -232,7 +239,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded text-[#005C9D] focus:ring-[#005C9D] border-slate-300 cursor-pointer"
                 />
-                <span>Remember Me</span>
+                <span>Save my info for next login</span>
               </label>
             </div>
 

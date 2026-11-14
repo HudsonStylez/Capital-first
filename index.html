@@ -28,13 +28,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Theme: apply persisted / system preference before paint (no flash) -->
+    <!-- Theme: white by default; only an explicit user choice enables dark (no flash) -->
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('capitalone_theme');
-          if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          if (localStorage.getItem('capitalone_theme') === 'dark') {
             document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
           }
         } catch (e) {}
       })();

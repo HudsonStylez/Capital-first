@@ -272,44 +272,6 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [isCafeLocatorModalOpen, setIsCafeLocatorModalOpen] = useState(false);
   const [cafeSearchZip, setCafeSearchZip] = useState('22102');
 
-  // Live Financial Telemetry & Equities Ticker State
-  const [liveTickerData, setLiveTickerData] = useState({
-    cofPrice: 154.20,
-    cofChange: 1.42,
-    sp500Price: 5984.30,
-    sp500Change: 0.41,
-    nasdaqPrice: 19290.15,
-    nasdaqChange: 0.55,
-    us10yYield: 4.41,
-    us10yChange: -0.02,
-    savingsApy: 4.25,
-    lastTick: 'Just now',
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveTickerData((prev) => {
-        const deltaCof = (Math.random() - 0.48) * 0.35;
-        const deltaSp = (Math.random() - 0.48) * 2.2;
-        const deltaNasdaq = (Math.random() - 0.48) * 6.5;
-        const newCof = +(prev.cofPrice + deltaCof).toFixed(2);
-        return {
-          ...prev,
-          cofPrice: newCof,
-          cofChange: +(((newCof - 152.04) / 152.04) * 100).toFixed(2),
-          sp500Price: +(prev.sp500Price + deltaSp).toFixed(2),
-          nasdaqPrice: +(prev.nasdaqPrice + deltaNasdaq).toFixed(2),
-          lastTick: new Date().toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          }),
-        };
-      });
-    }, 6000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Travel & Rewards Booking Modal State
   const [isTravelModalOpen, setIsTravelModalOpen] = useState(false);
   const [travelType, setTravelType] = useState<'Flight' | 'Hotel' | 'Dining' | 'Entertainment'>('Flight');
@@ -1126,77 +1088,6 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           </div>
         </div>
       </header>
-
-      {/* Live Financial Telemetry & Equities Ticker Bar */}
-      <div className="bg-[#001326] text-white border-b border-slate-800 px-4 py-2 text-xs overflow-x-auto shadow-inner">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-6 min-w-max">
-          <div className="flex items-center gap-6 font-mono text-[11px]">
-            {/* Capital One Financial (COF) */}
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sky-400">COF</span>
-              <span className="font-bold text-white">${liveTickerData.cofPrice.toFixed(2)}</span>
-              <span
-                className={`text-[10px] font-bold ${
-                  liveTickerData.cofChange >= 0 ? 'text-emerald-400' : 'text-red-400'
-                }`}
-              >
-                {liveTickerData.cofChange >= 0 ? '+' : ''}
-                {liveTickerData.cofChange.toFixed(2)}%
-              </span>
-            </div>
-
-            <span className="text-slate-700">|</span>
-
-            {/* S&P 500 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-sans">S&amp;P 500</span>
-              <span className="font-bold text-white">{liveTickerData.sp500Price.toLocaleString()}</span>
-              <span className="text-[10px] text-emerald-400 font-bold">
-                +{liveTickerData.sp500Change.toFixed(2)}%
-              </span>
-            </div>
-
-            <span className="text-slate-700">|</span>
-
-            {/* NASDAQ */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-sans">NASDAQ</span>
-              <span className="font-bold text-white">{liveTickerData.nasdaqPrice.toLocaleString()}</span>
-              <span className="text-[10px] text-emerald-400 font-bold">
-                +{liveTickerData.nasdaqChange.toFixed(2)}%
-              </span>
-            </div>
-
-            <span className="text-slate-700">|</span>
-
-            {/* 10Y US Treasury */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-sans">10Y Yield</span>
-              <span className="font-bold text-amber-300">{liveTickerData.us10yYield.toFixed(2)}%</span>
-              <span className="text-[10px] text-slate-400 font-bold">
-                {liveTickerData.us10yChange.toFixed(2)}%
-              </span>
-            </div>
-
-            <span className="text-slate-700">|</span>
-
-            {/* 360 Performance Savings APY */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-sky-300 font-sans font-bold">360 Savings:</span>
-              <span className="font-bold text-emerald-400 font-mono">4.25% APY</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-950 text-sky-200 border border-sky-800 font-sans">
-                FDIC Insured
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-sans">Live Market Feed</span>
-            <span className="font-mono text-slate-500 hidden sm:inline">{liveTickerData.lastTick}</span>
-          </div>
-        </div>
-      </div>
 
       {/* Global Broadcast Banner */}
       {globalNotification && (
@@ -2687,7 +2578,18 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      onClick={() => markNotificationRead(notif.id)}
+                      onClick={() => {
+                        markNotificationRead(notif.id);
+                        setIsNotificationDrawerOpen(false);
+                        const target =
+                          notif.actionUrl ||
+                          (notif.category === 'Security' || notif.type === 'security'
+                            ? '/profile'
+                            : notif.category === 'Offers & Discounts' || notif.type === 'offer'
+                            ? '/'
+                            : '/dashboard');
+                        onNavigate(target);
+                      }}
                       className={`p-4 rounded-xl border transition-all cursor-pointer relative ${
                         notif.unread
                           ? 'bg-sky-50/60 border-sky-200'

@@ -529,6 +529,7 @@ export const seedNotifications: NotificationItem[] = [
     unread: true,
     type: 'transaction',
     category: 'Transactions',
+    actionUrl: '/dashboard',
   },
   {
     id: 'notif-seed-2',
@@ -539,6 +540,7 @@ export const seedNotifications: NotificationItem[] = [
     unread: true,
     type: 'offer',
     category: 'Offers & Discounts',
+    actionUrl: '/',
   },
   {
     id: 'notif-seed-3',
@@ -549,6 +551,7 @@ export const seedNotifications: NotificationItem[] = [
     unread: true,
     type: 'info',
     category: 'Offers & Discounts',
+    actionUrl: '/',
   },
   {
     id: 'notif-seed-4',
@@ -559,6 +562,7 @@ export const seedNotifications: NotificationItem[] = [
     unread: false,
     type: 'alert',
     category: 'Transactions',
+    actionUrl: '/dashboard',
   },
   {
     id: 'notif-seed-5',
@@ -569,6 +573,7 @@ export const seedNotifications: NotificationItem[] = [
     unread: false,
     type: 'security',
     category: 'Security',
+    actionUrl: '/profile',
   },
   {
     id: 'notif-seed-6',
@@ -579,6 +584,7 @@ export const seedNotifications: NotificationItem[] = [
     unread: false,
     type: 'maintenance',
     category: 'Security',
+    actionUrl: '/profile',
   },
 ];
 

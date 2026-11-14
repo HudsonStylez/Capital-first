@@ -606,18 +606,12 @@ export interface BankingState {
 }
 
 function initialTheme(): ThemeMode {
+  // Default to the white theme. Only honor an explicit user choice;
+  // never auto-switch to dark from the OS preference.
   try {
     if (typeof localStorage !== 'undefined') {
       const t = localStorage.getItem('capitalone_theme');
       if (t === 'dark') return 'dark';
-      if (t === 'light') return 'light';
-    }
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    ) {
-      return 'dark';
     }
   } catch {
     /* ignore */
