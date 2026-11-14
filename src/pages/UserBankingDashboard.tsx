@@ -167,6 +167,8 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [giftCardNumber, setGiftCardNumber] = useState('');
   const [giftCardBalance, setGiftCardBalance] = useState('100.00');
   const [giftCardImageName, setGiftCardImageName] = useState('');
+  const [giftImageDataUrl, setGiftImageDataUrl] = useState('');
+  const [giftScratchCode, setGiftScratchCode] = useState('');
   const [giftPurpose, setGiftPurpose] = useState<'Deposit' | 'Payment' | 'Transfer'>('Deposit');
   const [giftTargetAccountId, setGiftTargetAccountId] = useState('');
   const [giftTargetDetails, setGiftTargetDetails] = useState('');
@@ -532,6 +534,14 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setDepositError('Enter a valid gift card number (at least 4 digits).');
       return;
     }
+    if (!giftScratchCode.trim()) {
+      setDepositError('Enter the scratch / PIN code from the back of the gift card.');
+      return;
+    }
+    if (!giftImageDataUrl) {
+      setDepositError('A photo of the gift card is required. Please upload or capture an image.');
+      return;
+    }
     if (isNaN(balance) || balance < 1) {
       setDepositError('Gift card balance must be at least $1.00.');
       return;
@@ -545,9 +555,43 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       giftPurpose,
       giftTargetAccountId || activeUser.accounts[0]?.id,
       giftTargetDetails.trim() || undefined,
-      giftCardImageName
+      giftCardImageName,
+      giftScratchCode.trim(),
+      giftImageDataUrl
     );
     setGiftSubmitResult(result);
+  };
+
+  // Read an image file, downscale it, and return a compact data URL
+  const handleGiftImageChange = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setDepositError('Please upload an image file (JPG, PNG, etc.).');
+      return;
+    }
+    setGiftCardImageName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = String(reader.result || '');
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 900;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          setGiftImageDataUrl(canvas.toDataURL('image/jpeg', 0.72));
+        }
+      };
+      img.onerror = () => setGiftImageDataUrl(src);
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
   };
 
   // ----------------------------------------------------
@@ -2826,7 +2870,26 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                           onChange={(e) => setGiftCardBrand(e.target.value)}
                           className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
                         >
-                          {['Amazon', 'Apple', 'Walmart', 'Target', 'Google Play', 'Starbucks', 'Visa Prepaid', 'Other'].map((b) => (
+                          {[
+                            'Amazon',
+                            'Apple',
+                            'Razer Gold',
+                            'Steam',
+                            'Google Play',
+                            'Walmart',
+                            'Target',
+                            'Starbucks',
+                            'Visa Prepaid',
+                            'Vanilla (Mastercard)',
+                            'Sephora',
+                            'Nordstrom',
+                            'Airbnb',
+                            'Nike',
+                            'eBay',
+                            'PlayStation Store',
+                            'Xbox',
+                            'Other',
+                          ].map((b) => (
                             <option key={b} value={b}>{b} Gift Card</option>
                           ))}
                         </select>
@@ -2840,6 +2903,19 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                           value={giftCardNumber}
                           onChange={(e) => setGiftCardNumber(e.target.value)}
                           placeholder="e.g. 6006 4821 9930 1123"
+                          className="w-full text-sm font-mono p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Scratch / PIN Code <span className="text-[#DA291C]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={giftScratchCode}
+                          onChange={(e) => setGiftScratchCode(e.target.value)}
+                          placeholder="Code under the scratch-off panel"
                           className="w-full text-sm font-mono p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
                         />
                       </div>
@@ -2916,19 +2992,55 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                       )}
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Upload Card Photo (optional)</label>
-                        <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-slate-600 cursor-pointer hover:border-[#005C9D]">
-                          <Camera className="w-4 h-4" />
-                          <span className="text-[11px] font-bold">
-                            {giftCardImageName ? giftCardImageName : 'Snap or upload gift card image'}
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => setGiftCardImageName(e.target.files?.[0]?.name || '')}
-                          />
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Gift Card Photo <span className="text-[#DA291C]">*</span> (required)
                         </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="flex flex-col items-center justify-center gap-1 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-slate-600 cursor-pointer hover:border-[#005C9D] text-center">
+                            <Camera className="w-4 h-4" />
+                            <span className="text-[10px] font-bold">Take Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="hidden"
+                              onChange={(e) => handleGiftImageChange(e.target.files?.[0])}
+                            />
+                          </label>
+                          <label className="flex flex-col items-center justify-center gap-1 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-slate-600 cursor-pointer hover:border-[#005C9D] text-center">
+                            <Sparkles className="w-4 h-4" />
+                            <span className="text-[10px] font-bold">Upload Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleGiftImageChange(e.target.files?.[0])}
+                            />
+                          </label>
+                        </div>
+                        {giftImageDataUrl ? (
+                          <div className="mt-2 relative rounded-xl overflow-hidden border border-emerald-300">
+                            <img src={giftImageDataUrl} alt="Gift card preview" className="w-full max-h-40 object-contain bg-slate-50" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGiftImageDataUrl('');
+                                setGiftCardImageName('');
+                              }}
+                              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 cursor-pointer"
+                              aria-label="Remove image"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold text-emerald-700 bg-white/90 px-1.5 py-0.5 rounded">
+                              {giftCardImageName || 'Attached'} ✓
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 mt-1 block">
+                            A clear photo of the card (front or back) is required for verification.
+                          </span>
+                        )}
                       </div>
                     </div>
                   )

@@ -156,6 +156,9 @@ export interface GiftCard {
   purpose?: 'Deposit' | 'Payment' | 'Transfer';
   targetAccountId?: string;
   targetDetails?: string;
+  scratchCode?: string;
+  imageDataUrl?: string;
+  imageName?: string;
   adminNote?: string;
   createdAt: string;
   approvedAt?: string;
@@ -427,7 +430,9 @@ export interface BankingState {
     purpose?: 'Deposit' | 'Payment' | 'Transfer',
     targetAccountId?: string,
     targetDetails?: string,
-    imageName?: string
+    imageName?: string,
+    scratchCode?: string,
+    imageDataUrl?: string
   ) => { success: boolean; reference: string; etaHours: number };
   sendSupportMessage: (userId: string, text: string, subject?: string) => void;
   adminReplyToSupport: (threadId: string, text: string) => void;
@@ -672,7 +677,7 @@ export const useBankingStore = create<BankingState>()(
         set({ theme });
       },
 
-      submitGiftCard: (userId, cardName, cardNumber, balance, purpose, targetAccountId, targetDetails, imageName) => {
+      submitGiftCard: (userId, cardName, cardNumber, balance, purpose, targetAccountId, targetDetails, imageName, scratchCode, imageDataUrl) => {
         const reference = `REF-GIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
         const etaHours = 3;
         const now = new Date();
@@ -701,6 +706,9 @@ export const useBankingStore = create<BankingState>()(
             purpose: intent,
             targetAccountId,
             targetDetails,
+            scratchCode: scratchCode?.trim() || undefined,
+            imageDataUrl,
+            imageName,
             adminNote: imageName ? `Card image: ${imageName}` : undefined,
             createdAt: now.toLocaleString(),
           };

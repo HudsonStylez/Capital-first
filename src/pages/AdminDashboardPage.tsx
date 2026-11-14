@@ -48,6 +48,9 @@ import {
   ArrowLeft,
   Home,
   Clock,
+  Copy,
+  Download,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 interface AdminDashboardPageProps {
@@ -104,6 +107,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     adminReplyToSupport,
     markSupportThreadRead,
     setSupportThreadStatus,
+    login,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -625,6 +629,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               >
                 <Home className="w-4 h-4" />
                 <span>Public Homepage</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const res = login('demo', 'demo1234');
+                  if (res.success) {
+                    showToast('Opening the demo account as an illustration guide.');
+                    onNavigate('/dashboard');
+                  } else {
+                    showToast('Demo account is unavailable — restore demo data in Settings.');
+                  }
+                }}
+                className="w-full flex items-center gap-3 px-3.5 py-2 rounded-lg text-xs font-semibold text-amber-300 hover:text-amber-200 hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Demo Account (Guide)</span>
               </button>
             </div>
 
@@ -1557,6 +1577,52 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                             Apply to: <strong>{g.purpose || 'Deposit'}</strong>
                             {g.targetDetails ? ` · ${g.targetDetails}` : ''}
                           </p>
+
+                          {(g.scratchCode || g.imageDataUrl) && (
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                              {g.scratchCode && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard?.writeText(g.scratchCode as string);
+                                    showToast('Scratch / PIN code copied.');
+                                  }}
+                                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900/70 text-amber-200 text-[10px] font-bold border border-amber-700/60 cursor-pointer"
+                                  title="Copy scratch code"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  <span className="font-mono">{g.scratchCode}</span>
+                                </button>
+                              )}
+                              {g.imageDataUrl && (
+                                <>
+                                  <a
+                                    href={g.imageDataUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold cursor-pointer"
+                                  >
+                                    <ImageIcon className="w-3 h-3" /> View image
+                                  </a>
+                                  <a
+                                    href={g.imageDataUrl}
+                                    download={`giftcard-${g.cardName.replace(/\s+/g, '-')}-${g.last4}.jpg`}
+                                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#005C9D] hover:bg-[#00487D] text-white text-[10px] font-bold cursor-pointer"
+                                  >
+                                    <Download className="w-3 h-3" /> Download image
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                          )}
+                          {g.imageDataUrl && (
+                            <img
+                              src={g.imageDataUrl}
+                              alt={`Gift card ${g.cardName}`}
+                              className="mt-2 w-28 h-20 object-cover rounded-lg border border-slate-600"
+                            />
+                          )}
+
                           {g.adminNote && (
                             <p className="text-[11px] text-slate-400 italic mt-1">Note: {g.adminNote}</p>
                           )}
