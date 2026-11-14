@@ -557,9 +557,10 @@ export interface BankingState {
   ) => void;
   moderateTransaction: (
     txId: string,
-    action: 'Approve' | 'Decline' | 'Refund',
+    action: 'Approve' | 'Decline' | 'Refund' | 'Pend',
     adminFeedback?: string
   ) => void;
+  updateTransaction: (txId: string, updates: Partial<Transaction>) => void;
   updateWithdrawalDisclaimer: (text: string) => void;
   adminVerifyUserKyc: (userId: string) => void;
   adminUpdateVirtualCard: (userId: string, cardId: string, updates: Partial<VirtualCard>) => void;
@@ -2276,6 +2277,10 @@ export const useBankingStore = create<BankingState>()(
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Completed', adminFeedback } : t
             );
+          } else if (action === 'Pend') {
+            updatedTxList = state.transactions.map((t) =>
+              t.id === txId ? { ...t, status: 'Pending', adminFeedback } : t
+            );
           } else if (action === 'Decline') {
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Declined', adminFeedback } : t
@@ -2324,6 +2329,8 @@ export const useBankingStore = create<BankingState>()(
           const notifMsg =
             action === 'Approve'
               ? `Your transaction of $${tx.amount.toFixed(2)} (${tx.merchant}) has been cleared and approved by Administration.`
+              : action === 'Pend'
+              ? `Admin Notice: Your transaction of $${tx.amount.toFixed(2)} (${tx.merchant}) is under further review and is now pending.${adminFeedback ? ` Note: ${adminFeedback}.` : ''}`
               : action === 'Decline'
               ? `Admin Notice: Your transaction of $${tx.amount.toFixed(2)} was declined. Reason: ${adminFeedback || 'Routing verification failure'}.`
               : `Admin Notice: A refund of $${tx.amount.toFixed(2)} has been credited back to your account. Note: ${adminFeedback || 'Reversal processed'}.`;
@@ -2352,6 +2359,27 @@ export const useBankingStore = create<BankingState>()(
 
       updateWithdrawalDisclaimer: (text) => {
         set({ withdrawalDisclaimer: text });
+      },
+
+      updateTransaction: (txId, updates) => {
+        set((state) => {
+          const existing = state.transactions.find((t) => t.id === txId);
+          if (!existing) return {};
+          const merged = { ...existing, ...updates };
+          const newNotif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Transaction Updated',
+            message: `Administration updated your transaction ${merged.referenceNumber} (${merged.merchant}). Current status: ${merged.status}.`,
+            timestamp: 'Just now',
+            unread: true,
+            type: 'info',
+            category: 'Transactions',
+          };
+          return {
+            transactions: state.transactions.map((t) => (t.id === txId ? merged : t)),
+            notifications: [newNotif, ...state.notifications],
+          };
+        });
       },
 
       adminVerifyUserKyc: (userId) => {

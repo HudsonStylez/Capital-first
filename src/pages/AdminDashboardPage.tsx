@@ -46,6 +46,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   Home,
+  Clock,
 } from 'lucide-react';
 
 interface AdminDashboardPageProps {
@@ -73,6 +74,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     updateUserDetails,
     updateClientAccountNumbers,
     moderateTransaction,
+    updateTransaction,
     reviewKycDocument,
     adminVerifyUserKyc,
     adminUpdateVirtualCard,
@@ -152,7 +154,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
   // Transaction Moderation Modal State (Accept, Decline, Refund)
   const [moderatingTx, setModeratingTx] = useState<Transaction | null>(null);
-  const [moderationAction, setModerationAction] = useState<'Approve' | 'Decline' | 'Refund'>('Approve');
+  const [moderationAction, setModerationAction] = useState<'Approve' | 'Decline' | 'Refund' | 'Pend'>('Approve');
+
+  // Transaction edit-customize modal
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [editTxMerchant, setEditTxMerchant] = useState('');
+  const [editTxAmount, setEditTxAmount] = useState('');
+  const [editTxCategory, setEditTxCategory] = useState('');
+  const [editTxStatus, setEditTxStatus] = useState<Transaction['status']>('Pending');
+  const [editTxFeedback, setEditTxFeedback] = useState('');
   const [moderationFeedback, setModerationFeedback] = useState('');
 
   // KYC Review Feedback & Inspection Modal State
@@ -350,6 +360,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
     setModeratingTx(null);
     setModerationFeedback('');
+  };
+
+  // Save customized transaction fields
+  const handleSaveTransactionEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTx) return;
+    const amount = parseFloat(editTxAmount);
+    updateTransaction(editingTx.id, {
+      merchant: editTxMerchant.trim() || editingTx.merchant,
+      amount: isNaN(amount) ? editingTx.amount : amount,
+      category: editTxCategory.trim() || editingTx.category,
+      status: editTxStatus,
+      adminFeedback: editTxFeedback.trim() || undefined,
+    });
+    showToast(`Transaction ${editingTx.referenceNumber} updated.`);
+    setEditingTx(null);
   };
 
   // Publish System Notification
@@ -1080,6 +1106,38 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                               >
                                 <RotateCcw className="w-3 h-3" />
                                 <span>Refund</span>
+                              </button>
+
+                              {/* Pend / Hold */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setModeratingTx(tx);
+                                  setModerationAction('Pend');
+                                  setModerationFeedback('Transaction placed on hold pending further compliance review.');
+                                }}
+                                className="px-2 py-1 bg-amber-950/70 hover:bg-amber-900 text-amber-300 text-xs font-bold rounded flex items-center gap-1 cursor-pointer"
+                                title="Set Transaction Pending"
+                              >
+                                <Clock className="w-3 h-3" />
+                                <span>Pend</span>
+                              </button>
+
+                              {/* Edit / Customize */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTx(tx);
+                                  setEditTxMerchant(tx.merchant);
+                                  setEditTxAmount(String(tx.amount));
+                                  setEditTxCategory(tx.category || '');
+                                  setEditTxStatus(tx.status);
+                                  setEditTxFeedback(tx.adminFeedback || '');
+                                }}
+                                className="p-1 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded cursor-pointer"
+                                title="Edit / Customize Transaction"
+                              >
+                                <Edit2 className="w-3 h-3" />
                               </button>
 
                               {/* Delete */}
@@ -2160,10 +2218,95 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                       ? 'bg-emerald-600 hover:bg-emerald-700'
                       : moderationAction === 'Refund'
                       ? 'bg-purple-600 hover:bg-purple-700'
+                      : moderationAction === 'Pend'
+                      ? 'bg-amber-600 hover:bg-amber-700'
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
                   Confirm {moderationAction}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL: EDIT / CUSTOMIZE TRANSACTION
+          ======================================================== */}
+      {editingTx && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white shadow-2xl relative animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-sky-400" /> Customize Transaction
+              </h3>
+              <button onClick={() => setEditingTx(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveTransactionEdit} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Merchant / Description</label>
+                <input
+                  type="text"
+                  value={editTxMerchant}
+                  onChange={(e) => setEditTxMerchant(e.target.value)}
+                  className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Amount ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editTxAmount}
+                    onChange={(e) => setEditTxAmount(e.target.value)}
+                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Status</label>
+                  <select
+                    value={editTxStatus}
+                    onChange={(e) => setEditTxStatus(e.target.value as Transaction['status'])}
+                    className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                  >
+                    {['Completed', 'Pending', 'Declined', 'Refunded'].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Category</label>
+                <input
+                  type="text"
+                  value={editTxCategory}
+                  onChange={(e) => setEditTxCategory(e.target.value)}
+                  className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Administrative Note</label>
+                <textarea
+                  rows={2}
+                  value={editTxFeedback}
+                  onChange={(e) => setEditTxFeedback(e.target.value)}
+                  className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingTx(null)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold rounded cursor-pointer">
+                  Save Changes
                 </button>
               </div>
             </form>
