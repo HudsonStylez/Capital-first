@@ -3,7 +3,7 @@
 # Deploy with: npx wrangler deploy
 # =============================================================================
 
-name = "capitalone-api"
+name = "capitalone"
 main = "workers/api.js"
 compatibility_date = "2024-10-22"
 

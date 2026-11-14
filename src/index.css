@@ -140,8 +140,13 @@
 .dark .text-slate-900 { color: #f1f5f9; }
 .dark .text-slate-800 { color: #e2e8f0; }
 .dark .text-slate-700 { color: #cbd5e1; }
+.dark .text-slate-600 { color: #94a3b8; }
 .dark .border-slate-100 { border-color: #1e293b; }
 .dark .border-slate-200 { border-color: #1e293b; }
+.dark .border-slate-300 { border-color: #334155; }
+.dark .text-\[\#1A1A1A\] { color: #f1f5f9; }
+.dark .text-\[\#666666\] { color: #94a3b8; }
+.dark .bg-\[\#F4F6F8\] { background-color: #0b1220; }
 
 /* High Contrast Mode (toggled via FloatingMegaphone -> contrast-125) */
 .contrast-125 .bg-white { background-color: #ffffff; }
