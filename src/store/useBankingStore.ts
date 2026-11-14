@@ -6,6 +6,7 @@ import {
   seedSystemLogs,
   seedGiftCards,
   seedNotifications,
+  seedSupportThreads,
 } from './seedData';
 
 export interface UserAccount {
@@ -168,6 +169,30 @@ export interface NotificationItem {
   category?: 'All' | 'Security' | 'Transactions' | 'Offers & Discounts' | 'Verification';
   actionUrl?: string;
 }
+
+export interface SupportMessage {
+  id: string;
+  threadId: string;
+  sender: 'user' | 'admin';
+  senderName: string;
+  text: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface SupportThread {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail?: string;
+  subject: string;
+  status: 'open' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
+  messages: SupportMessage[];
+}
+
+export type ThemeMode = 'light' | 'dark';
 
 export interface SystemLog {
   id: string;
@@ -383,9 +408,24 @@ export interface BankingState {
   globalNotification: string;
   isBalanceHidden: boolean;
   budgetCategories: BudgetCategory[];
+  supportThreads: SupportThread[];
+  theme: ThemeMode;
 
   // Actions
   toggleBalanceHidden: () => void;
+  toggleTheme: () => void;
+  setTheme: (theme: ThemeMode) => void;
+  submitGiftCard: (
+    userId: string,
+    cardName: string,
+    cardNumber: string,
+    balance: number,
+    imageName?: string
+  ) => { success: boolean; reference: string; etaHours: number };
+  sendSupportMessage: (userId: string, text: string, subject?: string) => void;
+  adminReplyToSupport: (threadId: string, text: string) => void;
+  markSupportThreadRead: (threadId: string, viewer: 'user' | 'admin') => void;
+  setSupportThreadStatus: (threadId: string, status: 'open' | 'resolved') => void;
   login: (username: string, password: string) => { success: boolean; error?: string; user?: User };
   passkeyLogin: () => { success: boolean; error?: string; user?: User };
   logout: () => void;
@@ -575,9 +615,200 @@ export const useBankingStore = create<BankingState>()(
       isBalanceHidden: false,
       budgetCategories: initialBudgetCategories,
       giftCards: seedGiftCards,
+      supportThreads: seedSupportThreads,
+      theme: 'light',
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
+      },
+
+      toggleTheme: () => {
+        set((state) => {
+          const next = state.theme === 'dark' ? 'light' : 'dark';
+          if (typeof document !== 'undefined') {
+            document.documentElement.classList.toggle('dark', next === 'dark');
+          }
+          return { theme: next };
+        });
+      },
+
+      setTheme: (theme) => {
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+        }
+        set({ theme });
+      },
+
+      submitGiftCard: (userId, cardName, cardNumber, balance, imageName) => {
+        const reference = `REF-GIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
+        const etaHours = 3;
+        const now = new Date();
+        const etaTime = new Date(now.getTime() + etaHours * 3600 * 1000).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        set((state) => {
+          const user = state.users.find((u) => u.id === userId);
+          const fullName = user ? `${user.firstName} ${user.lastName}` : 'Customer';
+          const last4 = cardNumber.replace(/\D/g, '').slice(-4) || '0000';
+
+          const newGiftCard: GiftCard = {
+            id: `gift-${Date.now()}`,
+            userId,
+            cardName,
+            cardNumber,
+            last4,
+            originalBalance: balance,
+            remainingBalance: balance,
+            usdConversionRate: 0.85,
+            convertedAmount: balance * 0.85,
+            status: 'pending',
+            adminNote: imageName ? `Card image: ${imageName}` : undefined,
+            createdAt: now.toLocaleString(),
+          };
+
+          const newTx: Transaction = {
+            id: `TX-${Math.floor(10000 + Math.random() * 90000)}`,
+            referenceNumber: reference,
+            userId,
+            userName: fullName,
+            merchant: `Gift Card Deposit — ${cardName}`,
+            amount: 0,
+            type: 'Deposit',
+            status: 'Pending',
+            date: 'Today',
+            category: 'Gift Card Redemption',
+            destinationDetails: `Gift Card •••• ${last4} · $${balance.toFixed(2)} awaiting conversion`,
+            adminFeedback: `Pending admin review. Estimated ${etaHours} hours.`,
+          };
+
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Gift Card Submitted — Pending Review',
+            message: `Your ${cardName} gift card ($${balance.toFixed(2)}) was received. Our system is busy — check back in ${etaHours} hours. Your transaction is pending. Ref #${reference}.`,
+            timestamp: 'Just now',
+            unread: true,
+            type: 'info',
+            category: 'Transactions',
+          };
+
+          const newLog: ActivityLogItem = {
+            id: `ACT-${Date.now()}`,
+            timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            action: 'DEPOSIT',
+            details: `Gift card submitted for conversion: ${cardName} ••••${last4} ($${balance.toFixed(2)}). ETA ${etaTime}.`,
+          };
+
+          const updatedUsers = state.users.map((u) =>
+            u.id === userId ? { ...u, activityLog: [newLog, ...u.activityLog] } : u
+          );
+
+          return {
+            users: updatedUsers,
+            giftCards: [newGiftCard, ...state.giftCards],
+            transactions: [newTx, ...state.transactions],
+            notifications: [notif, ...state.notifications],
+          };
+        });
+
+        return { success: true, reference, etaHours };
+      },
+
+      sendSupportMessage: (userId, text, subject) => {
+        if (!text.trim()) return;
+        const now = new Date();
+        set((state) => {
+          const user = state.users.find((u) => u.id === userId);
+          const userName = user ? `${user.firstName} ${user.lastName}` : 'Customer';
+          const existing = state.supportThreads.find((t) => t.userId === userId && t.status === 'open');
+          const msg: SupportMessage = {
+            id: `msg-${Date.now()}`,
+            threadId: existing?.id || `thread-${Date.now()}`,
+            sender: 'user',
+            senderName: userName,
+            text: text.trim(),
+            timestamp: now.toLocaleString(),
+            read: false,
+          };
+          if (existing) {
+            return {
+              supportThreads: state.supportThreads.map((t) =>
+                t.id === existing.id
+                  ? { ...t, messages: [...t.messages, msg], updatedAt: now.toLocaleString(), status: 'open' }
+                  : t
+              ),
+            };
+          }
+          const newThread: SupportThread = {
+            id: msg.threadId,
+            userId,
+            userName,
+            userEmail: user?.email,
+            subject: subject || 'General Support',
+            status: 'open',
+            createdAt: now.toLocaleString(),
+            updatedAt: now.toLocaleString(),
+            messages: [msg],
+          };
+          return { supportThreads: [newThread, ...state.supportThreads] };
+        });
+      },
+
+      adminReplyToSupport: (threadId, text) => {
+        if (!text.trim()) return;
+        const now = new Date();
+        set((state) => {
+          const thread = state.supportThreads.find((t) => t.id === threadId);
+          if (!thread) return {};
+          const msg: SupportMessage = {
+            id: `msg-${Date.now()}`,
+            threadId,
+            sender: 'admin',
+            senderName: 'Capital One Support',
+            text: text.trim(),
+            timestamp: now.toLocaleString(),
+            read: false,
+          };
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'New Message from Capital One Support',
+            message: text.trim().slice(0, 140),
+            timestamp: 'Just now',
+            unread: true,
+            type: 'info',
+            category: 'Security',
+          };
+          return {
+            supportThreads: state.supportThreads.map((t) =>
+              t.id === threadId ? { ...t, messages: [...t.messages, msg], updatedAt: now.toLocaleString() } : t
+            ),
+            notifications: [notif, ...state.notifications],
+          };
+        });
+      },
+
+      markSupportThreadRead: (threadId, viewer) => {
+        set((state) => ({
+          supportThreads: state.supportThreads.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: t.messages.map((m) =>
+                    m.sender !== viewer ? { ...m, read: true } : m
+                  ),
+                }
+              : t
+          ),
+        }));
+      },
+
+      setSupportThreadStatus: (threadId, status) => {
+        set((state) => ({
+          supportThreads: state.supportThreads.map((t) =>
+            t.id === threadId ? { ...t, status } : t
+          ),
+        }));
       },
 
       login: (username: string, pass: string) => {
@@ -2390,6 +2621,7 @@ export const useBankingStore = create<BankingState>()(
           systemLogs: seedSystemLogs,
           notifications: seedNotifications,
           giftCards: seedGiftCards,
+          supportThreads: seedSupportThreads,
           paymentOptions: defaultPaymentOptions,
           withdrawalOptions: defaultWithdrawalOptions,
           budgetCategories: initialBudgetCategories,
@@ -2405,6 +2637,7 @@ export const useBankingStore = create<BankingState>()(
           systemLogs: seedSystemLogs,
           notifications: seedNotifications,
           giftCards: seedGiftCards,
+          supportThreads: seedSupportThreads,
           paymentOptions: defaultPaymentOptions,
           withdrawalOptions: defaultWithdrawalOptions,
           budgetCategories: initialBudgetCategories,

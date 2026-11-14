@@ -10,6 +10,7 @@ import type {
   BudgetCategory,
   ActivityLogItem,
   UserAccount,
+  SupportThread,
 } from './useBankingStore';
 
 // =============================================================================
@@ -562,3 +563,60 @@ export const DEMO_CREDENTIALS = {
   password: 'demo1234',
   adminPasscode: '123456',
 };
+
+// -----------------------------------------------------------------------------
+// Support threads (human support chat, not AI)
+// -----------------------------------------------------------------------------
+export const seedSupportThreads: SupportThread[] = [
+  {
+    id: 'thread-alex-1',
+    userId: 'USR-ALEX',
+    userName: 'Alex Morgan',
+    userEmail: 'alex.morgan@example.com',
+    subject: 'Travel booking confirmation',
+    status: 'open',
+    createdAt: iso(1, 14, 5),
+    updatedAt: iso(1, 14, 12),
+    messages: [
+      {
+        id: 'msg-alex-1',
+        threadId: 'thread-alex-1',
+        sender: 'user',
+        senderName: 'Alex Morgan',
+        text: 'Hi, I booked a Delta flight on my Venture X and wanted to confirm the purchase protection applies. Can you confirm?',
+        timestamp: iso(1, 14, 5),
+        read: true,
+      },
+      {
+        id: 'msg-alex-2',
+        threadId: 'thread-alex-1',
+        sender: 'admin',
+        senderName: 'Capital One Support',
+        text: 'Hi Alex — yes, your Venture X purchase protection covers this travel booking. Your card is fully active. Anything else I can help with?',
+        timestamp: iso(1, 14, 12),
+        read: false,
+      },
+    ],
+  },
+  {
+    id: 'thread-maria-1',
+    userId: 'USR-MARIA',
+    userName: 'Maria Garcia',
+    userEmail: 'maria.garcia@example.com',
+    subject: 'ID verification status',
+    status: 'open',
+    createdAt: iso(0, 9, 30),
+    updatedAt: iso(0, 9, 30),
+    messages: [
+      {
+        id: 'msg-maria-1',
+        threadId: 'thread-maria-1',
+        sender: 'user',
+        senderName: 'Maria Garcia',
+        text: 'Hello, I uploaded my passport for verification. How long does the review take before I can make withdrawals?',
+        timestamp: iso(0, 9, 30),
+        read: false,
+      },
+    ],
+  },
+];

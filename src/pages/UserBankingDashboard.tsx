@@ -102,6 +102,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     globalNotification,
     isBalanceHidden,
     toggleBalanceHidden,
+    submitGiftCard,
   } = useBankingStore();
 
   // Keep active user synced with state
@@ -143,7 +144,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
   // Deposit ("Add Money") Modal State
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
-  const [depositTab, setDepositTab] = useState<'traditional' | 'crypto'>('traditional');
+  const [depositTab, setDepositTab] = useState<'traditional' | 'crypto' | 'gift-card'>('traditional');
   const [depositAccountId, setDepositAccountId] = useState('');
   const [depositAmount, setDepositAmount] = useState('100.00');
   const [depositMethod, setDepositMethod] = useState('Mobile Check Deposit');
@@ -152,6 +153,13 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [cryptoNetwork, setCryptoNetwork] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
   const [isProcessingDeposit, setIsProcessingDeposit] = useState(false);
   const [depositError, setDepositError] = useState<string | null>(null);
+
+  // Gift card submission state
+  const [giftCardBrand, setGiftCardBrand] = useState('Amazon');
+  const [giftCardNumber, setGiftCardNumber] = useState('');
+  const [giftCardBalance, setGiftCardBalance] = useState('100.00');
+  const [giftCardImageName, setGiftCardImageName] = useState('');
+  const [giftSubmitResult, setGiftSubmitResult] = useState<{ reference: string; etaHours: number } | null>(null);
 
   // Withdraw Funds Modal State (With Full Banking Fields)
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
@@ -470,6 +478,25 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setIsProcessingDeposit(false);
       setDepositError('An error occurred while processing the deposit.');
     }
+  };
+
+  // ----------------------------------------------------
+  // GIFT CARD SUBMISSION (converts to USD after admin approval)
+  // ----------------------------------------------------
+  const handleGiftCardSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const balance = parseFloat(giftCardBalance);
+    if (!giftCardNumber.trim() || giftCardNumber.replace(/\D/g, '').length < 4) {
+      setDepositError('Enter a valid gift card number (at least 4 digits).');
+      return;
+    }
+    if (isNaN(balance) || balance < 1) {
+      setDepositError('Gift card balance must be at least $1.00.');
+      return;
+    }
+    setDepositError(null);
+    const result = submitGiftCard(activeUser.id, giftCardBrand, giftCardNumber, balance, giftCardImageName);
+    setGiftSubmitResult(result);
   };
 
   // ----------------------------------------------------
@@ -2687,7 +2714,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
               )}
             </div>
 
-            {/* Deposit Tabs: Traditional vs Crypto */}
+            {/* Deposit Tabs: Traditional vs Crypto vs Gift Card */}
             <div className="flex items-center gap-2 mb-4 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
               <button
                 type="button"
@@ -2706,7 +2733,20 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                 }`}
               >
                 <QrCode className="w-3.5 h-3.5" />
-                <span>Crypto (QR Scan)</span>
+                <span>Crypto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDepositTab('gift-card');
+                  setGiftSubmitResult(null);
+                }}
+                className={`flex-1 py-1.5 rounded-md text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  depositTab === 'gift-card' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-600'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Gift Card</span>
               </button>
             </div>
 
@@ -2721,7 +2761,10 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleExecuteDeposit} className="space-y-4">
+              <form
+                onSubmit={(e) => (depositTab === 'gift-card' ? handleGiftCardSubmit(e) : handleExecuteDeposit(e))}
+                className="space-y-4"
+              >
                 {depositError && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
@@ -2736,7 +2779,104 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   onChange={(val) => setDepositAccountId(val)}
                 />
 
-                {depositTab === 'traditional' ? (
+                {depositTab === 'gift-card' ? (
+                  giftSubmitResult ? (
+                    <div className="py-6 text-center space-y-3 animate-in fade-in">
+                      <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+                        <Clock className="w-7 h-7" />
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900">Our system is busy</h4>
+                      <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
+                        Your gift card has been received and is <strong>pending review</strong>. Check back in{' '}
+                        <strong>{giftSubmitResult.etaHours} hours</strong> — your transaction is pending. A receipt
+                        and notification will be issued once an administrator confirms the conversion.
+                      </p>
+                      <div className="inline-block px-3 py-1.5 bg-slate-100 rounded-lg text-[11px] font-mono text-slate-700">
+                        Ref #{giftSubmitResult.reference}
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsDepositModalOpen(false);
+                            setGiftSubmitResult(null);
+                            setGiftCardNumber('');
+                          }}
+                          className="mt-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg cursor-pointer"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>
+                          Upload a gift card to convert it to USD and deposit into your account. Conversion is
+                          confirmed by an administrator and credited within ~3 hours.
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Gift Card Brand</label>
+                        <select
+                          value={giftCardBrand}
+                          onChange={(e) => setGiftCardBrand(e.target.value)}
+                          className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                        >
+                          {['Amazon', 'Apple', 'Walmart', 'Target', 'Google Play', 'Starbucks', 'Visa Prepaid', 'Other'].map((b) => (
+                            <option key={b} value={b}>{b} Gift Card</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Gift Card Number</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={giftCardNumber}
+                          onChange={(e) => setGiftCardNumber(e.target.value)}
+                          placeholder="e.g. 6006 4821 9930 1123"
+                          className="w-full text-sm font-mono p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Gift Card Balance ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="1"
+                          value={giftCardBalance}
+                          onChange={(e) => setGiftCardBalance(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full text-base font-mono tabular-nums p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                        />
+                        <span className="text-[11px] text-slate-500 mt-1 block">
+                          Estimated conversion ≈ ${(parseFloat(giftCardBalance || '0') * 0.85 || 0).toFixed(2)} USD at 0.85 rate (final rate set by admin).
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Upload Card Photo (optional)</label>
+                        <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-slate-600 cursor-pointer hover:border-[#005C9D]">
+                          <Camera className="w-4 h-4" />
+                          <span className="text-[11px] font-bold">
+                            {giftCardImageName ? giftCardImageName : 'Snap or upload gift card image'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => setGiftCardImageName(e.target.files?.[0]?.name || '')}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )
+                ) : depositTab === 'traditional' ? (
                   <>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -2873,56 +3013,68 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   </div>
                 )}
 
-                {/* Amount Input */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-bold text-slate-700">Deposit Amount ($)</label>
-                    <div className="flex gap-1.5">
-                      {['50', '100', '250', '500'].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setDepositAmount(preset)}
-                          className="px-2 py-0.5 text-[10px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-700 rounded"
-                        >
-                          ${preset}
-                        </button>
-                      ))}
+                {/* Amount Input (hidden for gift card tab) */}
+                {depositTab !== 'gift-card' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-bold text-slate-700">Deposit Amount ($)</label>
+                      <div className="flex gap-1.5">
+                        {['50', '100', '250', '500'].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setDepositAmount(preset)}
+                            className="px-2 py-0.5 text-[10px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-700 rounded"
+                          >
+                            ${preset}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      className="w-full text-base font-mono tabular-nums p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
+                    />
+                    {depositTab === 'crypto' && (
+                      <span className="text-[11px] text-emerald-600 font-mono mt-1 block">
+                        ≈ {(parseFloat(depositAmount || '0') / cryptoWallets[cryptoNetwork].rate).toFixed(6)}{' '}
+                        {cryptoWallets[cryptoNetwork].symbol}
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    className="w-full text-base font-mono tabular-nums p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005C9D]"
-                  />
-                  {depositTab === 'crypto' && (
-                    <span className="text-[11px] text-emerald-600 font-mono mt-1 block">
-                      ≈ {(parseFloat(depositAmount || '0') / cryptoWallets[cryptoNetwork].rate).toFixed(6)}{' '}
-                      {cryptoWallets[cryptoNetwork].symbol}
-                    </span>
-                  )}
-                </div>
+                )}
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsDepositModalOpen(false)}
-                    className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={parseFloat(depositAmount) < 0.01 || isNaN(parseFloat(depositAmount))}
-                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer"
-                  >
-                    Confirm Deposit
-                  </button>
-                </div>
+                {!(depositTab === 'gift-card' && giftSubmitResult) && (
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsDepositModalOpen(false)}
+                      className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={
+                        depositTab === 'gift-card'
+                          ? false
+                          : parseFloat(depositAmount) < 0.01 || isNaN(parseFloat(depositAmount))
+                      }
+                      className={`px-5 py-2 disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer ${
+                        depositTab === 'gift-card'
+                          ? 'bg-amber-600 hover:bg-amber-700'
+                          : 'bg-emerald-600 hover:bg-emerald-700'
+                      }`}
+                    >
+                      {depositTab === 'gift-card' ? 'Submit Gift Card' : 'Confirm Deposit'}
+                    </button>
+                  </div>
+                )}
               </form>
             )}
           </div>
