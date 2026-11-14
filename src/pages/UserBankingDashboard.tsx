@@ -1201,6 +1201,30 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
       {/* Main Body */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6 my-2">
+        {/* Mobile / tablet view switcher (the header switcher is desktop-only) */}
+        <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto pb-1 -mt-2">
+          {[
+            ['dashboard', 'Accounts'],
+            ['my-card', 'My Card'],
+            ['my-budget', 'Budget'],
+            ['at-a-glance', 'At a Glance'],
+            ['investments', 'Investments'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveViewMode(id as 'dashboard' | 'my-card' | 'my-budget' | 'at-a-glance' | 'investments')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors cursor-pointer ${
+                activeViewMode === id
+                  ? 'bg-[#005C9D] text-white border-[#005C9D]'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* ========================================================
             VIEW MODE 1: DEFAULT ACCOUNTS DASHBOARD
             ======================================================== */}
