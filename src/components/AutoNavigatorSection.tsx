@@ -56,6 +56,7 @@ export const AutoNavigatorSection: React.FC<AutoNavigatorSectionProps> = ({ onPr
                 className="w-full h-full object-cover object-center"
                 referrerPolicy="no-referrer"
               />
+              <div className="img-glass" />
               <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1.5">
                 <Car className="w-3.5 h-3.5" />
                 <span>Over 4 Million New &amp; Used Cars</span>

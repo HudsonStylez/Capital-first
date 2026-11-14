@@ -29,6 +29,7 @@ export const BusinessFinanceSection: React.FC<BusinessFinanceSectionProps> = ({ 
             </div>
           </div>
         )}
+        <div className="img-glass" />
       </div>
 
       {/* Content Container Below Image with Generous Padding */}

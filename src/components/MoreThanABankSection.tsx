@@ -62,6 +62,7 @@ export const MoreThanABankSection: React.FC<MoreThanABankSectionProps> = ({ onLe
                     className="w-full h-full object-cover object-center group-hover:scale-102 transition-transform duration-300 select-none"
                     referrerPolicy="no-referrer"
                   />
+                  <div className="img-glass" />
                   <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-[#005C9D] text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1.5">
                     <Icon className="w-3.5 h-3.5" />
                     <span>{card.tag}</span>
