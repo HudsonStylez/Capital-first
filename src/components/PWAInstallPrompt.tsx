@@ -74,9 +74,7 @@ export const PWAInstallPrompt: React.FC = () => {
       <div className="fixed bottom-20 left-4 right-4 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-[#005C9D] flex items-center justify-center shrink-0">
-              <Download className="w-5 h-5 text-white" />
-            </div>
+            <img src="/icons/icon-192.png" alt="Capital One IMF app icon" className="w-10 h-10 rounded-xl shadow-sm shrink-0" />
             <div className="flex-1">
               <h4 className="font-bold text-slate-900 text-sm">Add to Home Screen</h4>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -103,9 +101,7 @@ export const PWAInstallPrompt: React.FC = () => {
       <div className="fixed bottom-20 left-4 right-4 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-[#005C9D] flex items-center justify-center shrink-0">
-              <Download className="w-5 h-5 text-white" />
-            </div>
+            <img src="/icons/icon-192.png" alt="Capital One IMF app icon" className="w-10 h-10 rounded-xl shadow-sm shrink-0" />
             <div className="flex-1">
               <h4 className="font-bold text-slate-900 text-sm">Install Capital One Mobile</h4>
               <p className="text-xs text-slate-500 mt-0.5">
