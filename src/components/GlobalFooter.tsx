@@ -315,8 +315,18 @@ export const GlobalFooter: React.FC<GlobalFooterProps> = ({ onOpenAdminPasscode 
             </a>
           </div>
 
+          {/* Disclaimer: make non-affiliation explicit (helps trust & review) */}
+          <div className="pt-4 mt-4 border-t border-slate-200 text-[11px] leading-relaxed text-[#666666]">
+            <strong className="text-slate-800">Disclaimer:</strong> This is an independent
+            demonstration project for educational and design purposes. It is{' '}
+            <strong>not affiliated with, endorsed by, or connected to Capital One</strong> or any
+            financial institution. It is not a real bank, does not provide financial services, and
+            no real money, accounts, or card numbers are processed. All names, brands, and marks
+            belong to their respective owners.
+          </div>
+
           {/* Below that: "©2026 Capital One" on the left, and FDIC / Equal Housing Opportunity logos on the right */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-[11px] text-[#666666]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 text-[11px] text-[#666666]">
             <div>
               &copy;2026 Capital One
             </div>

@@ -349,6 +349,12 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen flex flex-col ${isHighContrast ? 'contrast-125' : ''}`}>
+      {/* Non-affiliation notice (public pages) — trust & transparency */}
+      {['/', '/signin', '/login', '/enroll', '/sign-in-help', '/interstitial'].includes(currentPath) && (
+        <div className="w-full bg-amber-50 border-b border-amber-200 text-amber-900 text-[11px] text-center px-3 py-1.5">
+          Demo project — <strong>not affiliated with Capital One</strong>. No real accounts, money, or cards.
+        </div>
+      )}
       <main className="flex-1 w-full">
         {renderRouteContent()}
       </main>

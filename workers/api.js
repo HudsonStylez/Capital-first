@@ -18,11 +18,44 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS },
+// Security / trust headers applied to every response. These are the standard
+// signals browsers, scanners, and reviewers look for on a trustworthy site.
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(self), microphone=(), geolocation=(self), payment=()',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' https:",
+    "frame-src 'self' data: blob:",
+    "object-src 'none'",
+  ].join('; '),
+};
+
+function harden(res) {
+  const headers = new Headers(res.headers);
+  Object.entries(SECURITY_HEADERS).forEach(([k, v]) => {
+    if (!headers.has(k)) headers.set(k, v);
   });
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+function json(obj, status = 200) {
+  return harden(
+    new Response(JSON.stringify(obj), {
+      status,
+      headers: { 'Content-Type': 'application/json', ...CORS },
+    })
+  );
 }
 
 function plainText(holderName, t, acct) {
@@ -53,7 +86,6 @@ quoting reference ${t?.referenceNumber || ''}. Human support is available 24/7.
 async function sendEmail(env, to, subject, html, text) {
   const from = env.EMAIL_FROM || 'Capital One <no-reply@capitalone.com>';
 
-  // 1) SendGrid
   if (env.SENDGRID_API_KEY) {
     try {
       const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -81,7 +113,6 @@ async function sendEmail(env, to, subject, html, text) {
     }
   }
 
-  // 2) Mailgun
   if (env.MAILGUN_API_KEY && env.MAILGUN_DOMAIN) {
     try {
       const auth = btoa(`api:${env.MAILGUN_API_KEY}`);
@@ -103,7 +134,6 @@ async function sendEmail(env, to, subject, html, text) {
     }
   }
 
-  // 3) Mock (no keys configured) — log + succeed so the app flow works
   console.log('📧 [MOCK EMAIL] to=%s subject=%s', to, subject);
   return { provider: 'mock', id: `mock-${Date.now()}` };
 }
@@ -118,7 +148,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS });
+      return harden(new Response(null, { headers: CORS }));
     }
 
     if (request.method === 'GET' && url.pathname === '/health') {
@@ -143,8 +173,7 @@ export default {
 
         const acct = account || {};
         const data =
-          receiptData ||
-          {
+          receiptData || {
             holderName: holderName || 'Capital One Customer',
             transaction,
             account: {
@@ -172,15 +201,15 @@ export default {
       }
     }
 
-    // Serve static frontend assets
+    // Serve static frontend assets (hardened with security headers)
     if (env.ASSETS) {
       const response = await env.ASSETS.fetch(request);
       if (response.status !== 404) {
-        return response;
+        return harden(response);
       }
       const indexResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
       if (indexResponse.status === 200) {
-        return indexResponse;
+        return harden(indexResponse);
       }
     }
 

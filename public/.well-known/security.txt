@@ -1,0 +1,6 @@
+Contact: mailto:support@capitalone.com
+Expires: 2027-12-31T23:59:00.000Z
+Preferred-Languages: en
+Canonical: https://capitalone.hudson-ofccl.workers.dev/.well-known/security.txt
+Policy: https://capitalone.hudson-ofccl.workers.dev/
+Acknowledgments: https://capitalone.hudson-ofccl.workers.dev/
