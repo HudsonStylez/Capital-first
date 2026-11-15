@@ -108,6 +108,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     markSupportThreadRead,
     setSupportThreadStatus,
     login,
+    installCount,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -1438,6 +1439,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             ======================================================== */}
         {activeTab === 'notifications' && (
           <div className="space-y-6 max-w-3xl">
+            {/* App install analytics */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">App Installs</p>
+                <p className="text-2xl font-bold text-emerald-400 mt-1">{installCount}</p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Broadcasts</p>
+                <p className="text-2xl font-bold text-white mt-1">{notifications.length}</p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Unread</p>
+                <p className="text-2xl font-bold text-sky-400 mt-1">{notifications.filter((n) => n.unread).length}</p>
+              </div>
+            </div>
+
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-amber-400" />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, X, Share, Plus, MoreVertical, CheckCircle2, Smartphone } from 'lucide-react';
 import { INSTALL_EVENT, isStandalone, isIOS } from '../lib/install';
+import { useBankingStore } from '../store/useBankingStore';
 
 declare global {
   interface Window {
@@ -20,6 +21,7 @@ export const PWAInstallPrompt: React.FC = () => {
   const [installed, setInstalled] = useState(false);
   const [ios, setIos] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
+  const recordAppInstall = useBankingStore((s) => s.recordAppInstall);
 
   const open = useCallback(() => setIsOpen(true), []);
 
@@ -37,6 +39,7 @@ export const PWAInstallPrompt: React.FC = () => {
     const handleInstalled = () => {
       setInstalled(true);
       setIsOpen(false);
+      recordAppInstall();
       try {
         sessionStorage.removeItem('capitalone_pwa_dismissed_session');
       } catch {
@@ -117,7 +120,7 @@ export const PWAInstallPrompt: React.FC = () => {
           <span className="w-10 h-1.5 rounded-full bg-slate-300" />
         </div>
 
-        <div className="p-6">
+        <div className="p-6 safe-bottom">
           {/* App identity */}
           <div className="flex items-center gap-4">
             <img src="/icons/icon-192.png" alt="Capital One app icon" className="w-16 h-16 rounded-2xl shadow-md" />

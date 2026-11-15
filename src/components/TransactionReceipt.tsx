@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { X, Copy, Send, Mail, Printer, Download, Share2, CheckCircle2, Loader2 } from 'lucide-react';
 import { buildReceiptHTML } from '../lib/receiptTemplate.js';
 
@@ -87,6 +87,16 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
   );
 
   const html = useMemo(() => buildReceiptHTML(receiptData), [receiptData]);
+
+  // Render the statement via a same-origin blob URL (CSP-safe; works with
+  // `frame-src 'self' blob:`). The document itself is unchanged.
+  const [blobUrl, setBlobUrl] = useState('');
+  useEffect(() => {
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [html]);
 
   if (!isOpen) return null;
 
@@ -191,7 +201,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
 
         {/* Statement preview */}
         <div className="flex-1 overflow-hidden bg-[#EEF2F6]">
-          <iframe ref={iframeRef} title="Capital One Receipt" srcDoc={html} className="w-full h-full min-h-[420px] border-0" />
+          <iframe ref={iframeRef} title="Capital One Receipt" src={blobUrl} className="w-full h-full min-h-[420px] border-0" />
         </div>
 
         {/* Actions */}

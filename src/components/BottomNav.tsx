@@ -81,7 +81,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       {/* Sticky Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Navigation"
-        className="sticky bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg"
+        className="sticky bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg safe-bottom"
       >
         <div className="max-w-md mx-auto grid grid-cols-5 items-center h-16 px-1">
           {/* 1. Home */}

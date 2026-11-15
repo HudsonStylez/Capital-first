@@ -417,11 +417,13 @@ export interface BankingState {
   budgetCategories: BudgetCategory[];
   supportThreads: SupportThread[];
   theme: ThemeMode;
+  installCount: number;
 
   // Actions
   toggleBalanceHidden: () => void;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
+  recordAppInstall: () => void;
   submitGiftCard: (
     userId: string,
     cardName: string,
@@ -645,9 +647,26 @@ export const useBankingStore = create<BankingState>()(
       giftCards: seedGiftCards,
       supportThreads: seedSupportThreads,
       theme: initialTheme(),
+      installCount: 0,
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
+      },
+
+      recordAppInstall: () => {
+        set((state) => {
+          const next = state.installCount + 1;
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'App Installed',
+            message: 'Capital One was installed to the device home screen. Welcome aboard!',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'info',
+          };
+          return { installCount: next, notifications: [notif, ...state.notifications] };
+        });
       },
 
       toggleTheme: () => {

@@ -99,6 +99,18 @@
   z-index: 0;
 }
 
+/* iOS notch / home-indicator safe areas (viewport-fit=cover) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
 /* Glass sheen overlay for background imagery (heroes, banners, feature art) */
 .img-glass {
   position: absolute;
