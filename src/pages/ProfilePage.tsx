@@ -33,10 +33,12 @@ import {
   Scan,
   MonitorSmartphone,
   LogIn,
+  Download,
 } from 'lucide-react';
 import { FaceIdVerificationModal } from '../components/FaceIdVerificationModal';
 import { timeAgo, formatDateTime } from '../lib/time';
 import { useNow } from '../hooks/useNow';
+import { showInstallPrompt } from '../lib/install';
 
 interface ProfilePageProps {
   onNavigate: (path: string) => void;
@@ -262,6 +264,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={showInstallPrompt}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#005C9D] hover:bg-[#00487D] rounded-lg transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Install App</span>
+            </button>
             <button
               type="button"
               onClick={() => {

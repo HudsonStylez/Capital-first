@@ -1450,6 +1450,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </div>
 
               <form onSubmit={handlePublishNotification} className="space-y-3.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    addNotification(
+                      'Install the Capital One App',
+                      'For the best experience, add the app to your home screen — full-screen access, offline use, and instant alerts. Open the menu and tap “Install the App”, or use your browser’s Install/Add to Home Screen option.',
+                      'info'
+                    );
+                    showToast('Install-app nudge broadcast to all users.');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-[#005C9D] hover:bg-[#00487D] text-white text-xs font-bold rounded-lg cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Broadcast “Install the App” nudge
+                </button>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">
                     Announcement Title

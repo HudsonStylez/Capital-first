@@ -339,9 +339,6 @@ function AppContent() {
 
             {/* Share Button - Share this app via WhatsApp, Xender, or any app */}
             <ShareButton variant="fab" />
-
-            {/* PWA Install Prompt - Install app to home screen */}
-            <PWAInstallPrompt />
           </>
         );
     }
@@ -399,6 +396,9 @@ function AppContent() {
         onNavigate={navigate}
         onOpenPreApproval={() => setIsPreApprovalOpen(true)}
       />
+
+      {/* Global Install-app prompt (native-feeling on Android, iOS & desktop) */}
+      <PWAInstallPrompt />
 
       {/* Global Toast Notification */}
       {toastMessage && (

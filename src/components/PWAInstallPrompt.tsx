@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Download, X, Share2, CheckCircle2, MoreVertical } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Download, X, Share, Plus, MoreVertical, CheckCircle2, Smartphone } from 'lucide-react';
+import { INSTALL_EVENT, isStandalone, isIOS } from '../lib/install';
 
 declare global {
   interface Window {
@@ -7,56 +8,59 @@ declare global {
   }
 }
 
+/**
+ * A single, native-feeling "Install app" sheet used on every platform:
+ *  - Android / PC (Chrome, Edge): one-tap Install via the browser's prompt.
+ *  - iOS Safari: an app-style guided sheet (Share → Add to Home Screen).
+ * Appears automatically on first visit and stays until the app is installed.
+ */
 export const PWAInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [installed, setInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
+  const [ios, setIos] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+
+  const open = useCallback(() => setIsOpen(true), []);
 
   useEffect(() => {
-    // Already installed / running as an app → never prompt
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window as any).navigator?.standalone === true;
-    setIsStandalone(standalone);
-    if (standalone) return;
+    if (isStandalone()) return;
 
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(iOS);
-
-    // Dismissal lasts for the current visit only — the prompt returns next visit
-    // (and keeps returning) until the app is actually installed.
-    const dismissedThisVisit = sessionStorage.getItem('capitalone_pwa_dismissed_session');
-    if (dismissedThisVisit) return;
+    setIos(isIOS());
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      setCanInstall(true);
       (window as any).__pwaInstallPrompt = e;
     };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-
     const handleInstalled = () => {
       setInstalled(true);
-      setShowPrompt(false);
+      setIsOpen(false);
       try {
         sessionStorage.removeItem('capitalone_pwa_dismissed_session');
       } catch {
         /* ignore */
       }
     };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     window.addEventListener('appinstalled', handleInstalled);
+    window.addEventListener(INSTALL_EVENT, open);
 
-    // Show the prompt on first visit regardless of platform
-    const timer = setTimeout(() => setShowPrompt(true), 2500);
+    // Auto-show on first visit (returns every visit until installed)
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const dismissedThisVisit = sessionStorage.getItem('capitalone_pwa_dismissed_session');
+    if (!dismissedThisVisit) {
+      timer = setTimeout(() => setIsOpen(true), 2500);
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleInstalled);
-      clearTimeout(timer);
+      window.removeEventListener(INSTALL_EVENT, open);
+      if (timer) clearTimeout(timer);
     };
-  }, []);
+  }, [open]);
 
   const handleInstall = async () => {
     const prompt = deferredPrompt || (window as any).__pwaInstallPrompt;
@@ -65,15 +69,18 @@ export const PWAInstallPrompt: React.FC = () => {
       const { outcome } = await prompt.userChoice;
       if (outcome === 'accepted') {
         setInstalled(true);
-        setShowPrompt(false);
+        setIsOpen(false);
       }
       setDeferredPrompt(null);
       (window as any).__pwaInstallPrompt = null;
+    } else {
+      // No native prompt available — keep the sheet open with manual guidance
+      setCanInstall(false);
     }
   };
 
   const handleDismiss = () => {
-    setShowPrompt(false);
+    setIsOpen(false);
     try {
       sessionStorage.setItem('capitalone_pwa_dismissed_session', 'true');
     } catch {
@@ -81,12 +88,13 @@ export const PWAInstallPrompt: React.FC = () => {
     }
   };
 
-  if (isStandalone) return null;
+  if (isStandalone()) return null;
 
+  // Installed confirmation
   if (installed) {
     return (
-      <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 glass-strong border border-emerald-200 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-4 duration-300">
-        <div className="flex items-center gap-3">
+      <div className="fixed z-[90] bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:w-80">
+        <div className="glass-strong border border-emerald-200 rounded-2xl shadow-2xl p-4 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300">
           <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
           <div>
             <h4 className="font-bold text-emerald-900 text-sm">App Installed!</h4>
@@ -97,61 +105,115 @@ export const PWAInstallPrompt: React.FC = () => {
     );
   }
 
-  if (!showPrompt) return null;
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 glass-strong border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-4 duration-300">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1">
-          <img src="/icons/icon-192.png" alt="Capital One app icon" className="w-11 h-11 rounded-xl shadow-sm shrink-0" />
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-slate-900 text-sm">Install Capital One</h4>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              {isIOS
-                ? 'Tap Share, then "Add to Home Screen" for a full-screen app experience.'
-                : 'Add it to your home screen for instant access, offline use, and notifications.'}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="p-1 text-slate-400 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors shrink-0"
-          aria-label="Dismiss install prompt"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleDismiss} />
 
-      {isIOS ? (
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
-          <Share2 className="w-3.5 h-3.5 text-[#005C9D]" />
-          <span>Tap the <strong>Share</strong> icon in Safari, then <strong>Add to Home Screen</strong>.</span>
+      <div className="relative w-full sm:max-w-md glass-strong border border-white/40 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-300">
+        {/* Grab handle (mobile) */}
+        <div className="pt-3 pb-1 flex justify-center sm:hidden">
+          <span className="w-10 h-1.5 rounded-full bg-slate-300" />
         </div>
-      ) : deferredPrompt ? (
-        <div className="flex gap-2 mt-3">
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="flex-1 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-          >
-            Not Now
-          </button>
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="flex-1 py-2 text-xs font-bold text-white bg-[#005C9D] hover:bg-[#00487D] rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Install
-          </button>
+
+        <div className="p-6">
+          {/* App identity */}
+          <div className="flex items-center gap-4">
+            <img src="/icons/icon-192.png" alt="Capital One app icon" className="w-16 h-16 rounded-2xl shadow-md" />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold text-slate-900">Install Capital One</h3>
+              <p className="text-xs text-slate-500">
+                Add the app to your home screen for instant, full-screen access.
+              </p>
+              <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-500">
+                <span className="flex items-center gap-1"><Smartphone className="w-3 h-3" /> Fast</span>
+                <span aria-hidden>·</span>
+                <span>Offline-ready</span>
+                <span aria-hidden>·</span>
+                <span>Notifications</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="p-1.5 text-slate-400 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Platform-specific action */}
+          {ios ? (
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
+                  <Share className="w-4 h-4" />
+                </div>
+                <p className="text-xs text-slate-700">
+                  <strong>Step 1.</strong> Tap the <strong>Share</strong> icon in Safari's toolbar.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <p className="text-xs text-slate-700">
+                  <strong>Step 2.</strong> Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="w-full py-3 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold text-sm rounded-xl transition-colors cursor-pointer"
+              >
+                Got it
+              </button>
+            </div>
+          ) : canInstall || deferredPrompt ? (
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="flex-1 py-3 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                Maybe later
+              </button>
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="flex-1 py-3 text-sm font-bold text-white bg-[#005C9D] hover:bg-[#00487D] rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4" /> Install
+              </button>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
+                  <MoreVertical className="w-4 h-4" />
+                </div>
+                <p className="text-xs text-slate-700">
+                  Open your browser menu and choose <strong>Install app</strong> or{' '}
+                  <strong>Add to Home screen</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          )}
+
+          <p className="text-[10px] text-slate-400 text-center mt-3">
+            Demo project — not affiliated with Capital One.
+          </p>
         </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
-          <MoreVertical className="w-3.5 h-3.5 text-[#005C9D]" />
-          <span>Open your browser menu and choose <strong>Install app</strong> / <strong>Add to Home screen</strong>.</span>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

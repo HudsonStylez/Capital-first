@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Search, ChevronRight, CreditCard, Landmark, Car, Briefcase, ShieldCheck, MapPin, HelpCircle, User, LogIn } from 'lucide-react';
+import { X, Search, ChevronRight, CreditCard, Landmark, Car, Briefcase, ShieldCheck, MapPin, HelpCircle, User, LogIn, Download } from 'lucide-react';
 import { CapitalOneLogo } from './CapitalOneLogo';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { showInstallPrompt } from '../lib/install';
 
 interface SlideNavDrawerProps {
   isOpen: boolean;
@@ -217,6 +218,17 @@ export const SlideNavDrawer: React.FC<SlideNavDrawerProps> = ({
 
         {/* Drawer Bottom Support Shortcuts */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              setTimeout(showInstallPrompt, 150);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold rounded-lg transition-colors cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Install the App</span>
+          </button>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 hover:text-[#005C9D] cursor-pointer">
               <MapPin className="w-4 h-4 text-slate-400" />
