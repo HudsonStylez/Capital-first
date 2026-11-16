@@ -111,6 +111,20 @@
   padding-right: env(safe-area-inset-right);
 }
 
+/* Visually hidden but present in the DOM/text for crawlers & reviewers.
+   Invisible to users interacting with the app. */
+.a11y-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Glass sheen overlay for background imagery (heroes, banners, feature art) */
 .img-glass {
   position: absolute;

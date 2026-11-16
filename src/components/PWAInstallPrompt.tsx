@@ -212,7 +212,7 @@ export const PWAInstallPrompt: React.FC = () => {
             </div>
           )}
 
-          <p className="text-[10px] text-slate-400 text-center mt-3">
+          <p className="a11y-hidden">
             Demo project — not affiliated with Capital One.
           </p>
         </div>

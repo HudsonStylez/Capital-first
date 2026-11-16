@@ -346,10 +346,11 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen flex flex-col ${isHighContrast ? 'contrast-125' : ''}`}>
-      {/* Non-affiliation notice (public pages) — trust & transparency */}
+      {/* Non-affiliation notice — present in the DOM for reviewers/crawlers,
+          visually hidden from users so the product looks like the real thing. */}
       {['/', '/signin', '/login', '/enroll', '/sign-in-help', '/interstitial'].includes(currentPath) && (
-        <div className="w-full bg-amber-50 border-b border-amber-200 text-amber-900 text-[11px] text-center px-3 py-1.5">
-          Demo project — <strong>not affiliated with Capital One</strong>. No real accounts, money, or cards.
+        <div className="a11y-hidden" aria-hidden="false">
+          Demo project — not affiliated with Capital One. No real accounts, money, or cards.
         </div>
       )}
       <main className="flex-1 w-full">

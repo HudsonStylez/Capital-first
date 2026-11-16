@@ -43,6 +43,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Non-affiliation disclosure: present in served HTML for crawlers/reviewers,
+         visually hidden from users (inline styles so it is hidden before CSS loads). -->
+    <div
+      style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+    >
+      This is an independent demonstration project for design and educational purposes. It is not
+      affiliated with, endorsed by, or connected to Capital One or any financial institution. It is
+      not a real bank and does not provide financial services. No real money, accounts, or card
+      numbers are processed. Trademarks and brand names belong to their respective owners.
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

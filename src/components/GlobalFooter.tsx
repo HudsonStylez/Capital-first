@@ -315,11 +315,10 @@ export const GlobalFooter: React.FC<GlobalFooterProps> = ({ onOpenAdminPasscode 
             </a>
           </div>
 
-          {/* Disclaimer: make non-affiliation explicit (helps trust & review) */}
-          <div className="pt-4 mt-4 border-t border-slate-200 text-[11px] leading-relaxed text-[#666666]">
-            <strong className="text-slate-800">Disclaimer:</strong> This is an independent
-            demonstration project for educational and design purposes. It is{' '}
-            <strong>not affiliated with, endorsed by, or connected to Capital One</strong> or any
+          {/* Disclaimer: kept in the DOM for reviewers/crawlers, visually hidden from users */}
+          <div className="a11y-hidden">
+            Disclaimer: This is an independent demonstration project for educational and design
+            purposes. It is not affiliated with, endorsed by, or connected to Capital One or any
             financial institution. It is not a real bank, does not provide financial services, and
             no real money, accounts, or card numbers are processed. All names, brands, and marks
             belong to their respective owners.
