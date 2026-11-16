@@ -120,3 +120,33 @@ Clearing a Safe Browsing flag is an **external, human review** process on
 Google/Microsoft's side. No amount of code guarantees removal. The code here
 now satisfies every *technical* criterion; the *reputation* criteria are fixed
 by owning the domain, verifying it, and (ideally) disclosing non-affiliation.
+
+---
+
+## Definition of Done (run this)
+
+1. **Deploy** (headers + trust files go live):
+   ```bash
+   npx wrangler login      # one-time, in your browser
+   npx wrangler deploy
+   ```
+   (On Vercel: just push — `vercel.json` applies the same headers.)
+
+2. **Verify all technical signals pass:**
+   ```bash
+   npm run verify:trust -- https://capitalone.hudson-ofccl.workers.dev
+   ```
+   Expect **24/24 PASS**. If the 6 header checks fail, the Worker/Pages deploy
+   hasn't applied yet — redeploy (the `_headers` file and `workers/api.js`
+   `harden()` both set them).
+
+3. **Submit the reputation reviews** (copy/paste links printed by the script):
+   - Google Search Console → Security & Manual Actions → **Request Review**
+   - Bing Webmaster Tools → Security
+   - Microsoft SmartScreen → **Report unsafe site**
+
+4. **Confirm:** after Google's 1–3 day re-scan, Chrome no longer shows the
+   interstitial and the install prompt works on **Android, iOS, and desktop**.
+
+> The `scripts/verify-trust.mjs` script checks the *technical* criteria only.
+> The *reputation* step (3) requires your account login — it cannot be scripted.
