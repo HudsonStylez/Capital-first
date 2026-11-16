@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, X, Share, Plus, MoreVertical, CheckCircle2, Smartphone } from 'lucide-react';
-import { INSTALL_EVENT, isStandalone, isIOS } from '../lib/install';
+import { INSTALL_EVENT, isStandalone, isIOS, isIOSNonSafari } from '../lib/install';
 import { useBankingStore } from '../store/useBankingStore';
 
 declare global {
@@ -20,6 +20,7 @@ export const PWAInstallPrompt: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [ios, setIos] = useState(false);
+  const [iosNonSafari, setIosNonSafari] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
   const recordAppInstall = useBankingStore((s) => s.recordAppInstall);
 
@@ -29,6 +30,7 @@ export const PWAInstallPrompt: React.FC = () => {
     if (isStandalone()) return;
 
     setIos(isIOS());
+    setIosNonSafari(isIOSNonSafari());
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -149,31 +151,52 @@ export const PWAInstallPrompt: React.FC = () => {
 
           {/* Platform-specific action */}
           {ios ? (
-            <div className="mt-5 space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
-                  <Share className="w-4 h-4" />
+            iosNonSafari ? (
+              <div className="mt-5 space-y-3">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                    <Share className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs text-amber-900">
+                    To install on iPhone/iPad, open this page in <strong>Safari</strong>, then tap{' '}
+                    <strong>Share → Add to Home Screen</strong>. (In-app browsers can't install apps.)
+                  </p>
                 </div>
-                <p className="text-xs text-slate-700">
-                  <strong>Step 1.</strong> Tap the <strong>Share</strong> icon in Safari's toolbar.
-                </p>
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="w-full py-3 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  Got it
+                </button>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
-                  <Plus className="w-4 h-4" />
+            ) : (
+              <div className="mt-5 space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
+                    <Share className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs text-slate-700">
+                    <strong>Step 1.</strong> Tap the <strong>Share</strong> icon in Safari's toolbar.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-700">
-                  <strong>Step 2.</strong> Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.
-                </p>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs text-slate-700">
+                    <strong>Step 2.</strong> Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="w-full py-3 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  Got it
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="w-full py-3 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold text-sm rounded-xl transition-colors cursor-pointer"
-              >
-                Got it
-              </button>
-            </div>
+            )
           ) : canInstall || deferredPrompt ? (
             <div className="mt-5 flex gap-2">
               <button

@@ -18,5 +18,22 @@ export function isStandalone(): boolean {
 
 export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  const ua = navigator.userAgent || '';
+  const classic = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  // iPadOS 13+ reports as "Macintosh" — disambiguate via touch support
+  const iPadOS = /Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1;
+  return classic || iPadOS;
+}
+
+/** True on iOS when NOT in Safari (in-app browsers can't Add to Home Screen). */
+export function isIOSNonSafari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  if (!isIOS()) return false;
+  const ua = navigator.userAgent || '';
+  // Safari shows "Safari" and does NOT contain these embedded-browser tokens
+  const otherBrowser =
+    /CriOS|FxiOS|EdgiOS|OPiOS|mercury|GSA|DuckDuckGo|Instagram|FBAN|FBAV|FB_IAB|Line|Twitter|MicroMessenger|Snapchat|Pinterest/i.test(
+      ua
+    );
+  return otherBrowser;
 }

@@ -2202,7 +2202,20 @@ export const useBankingStore = create<BankingState>()(
           const current = state.currentUser?.id === userId
             ? updatedUsers.find((u) => u.id === userId) || state.currentUser
             : state.currentUser;
-          return { users: updatedUsers, currentUser: current };
+
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Account Details Updated',
+            message: 'An administrator updated your account and routing numbers. Review them in your Profile.',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'info',
+            category: 'Security',
+            actionUrl: '/profile',
+          };
+
+          return { users: updatedUsers, currentUser: current, notifications: [notif, ...state.notifications] };
         });
       },
 
@@ -2597,7 +2610,26 @@ export const useBankingStore = create<BankingState>()(
             category: 'Admin Action',
           };
 
-          return { users: updatedUsers, currentUser: current, transactions: [newTx, ...state.transactions] };
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Account Updated by Capital One',
+            message: `An administrator ${delta >= 0 ? 'credited' : 'adjusted'} $${Math.abs(delta).toFixed(
+              2
+            )} on your account. Reason: ${reason}.`,
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'transaction',
+            category: 'Transactions',
+            actionUrl: '/dashboard',
+          };
+
+          return {
+            users: updatedUsers,
+            currentUser: current,
+            transactions: [newTx, ...state.transactions],
+            notifications: [notif, ...state.notifications],
+          };
         });
       },
 
@@ -2613,7 +2645,18 @@ export const useBankingStore = create<BankingState>()(
           const current = state.currentUser?.id === userId
             ? updatedUsers.find((u) => u.id === userId) || state.currentUser
             : state.currentUser;
-          return { users: updatedUsers, currentUser: current };
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Balance Updated by Capital One',
+            message: `An administrator updated your account balance to $${newBalance.toFixed(2)}.`,
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'transaction',
+            category: 'Transactions',
+            actionUrl: '/dashboard',
+          };
+          return { users: updatedUsers, currentUser: current, notifications: [notif, ...state.notifications] };
         });
       },
 
@@ -2621,7 +2664,21 @@ export const useBankingStore = create<BankingState>()(
         set((state) => {
           const updatedUsers = state.users.map((u) => (u.id === userId ? { ...u, status: newStatus } : u));
           const current = state.currentUser?.id === userId ? { ...state.currentUser, status: newStatus } : state.currentUser;
-          return { users: updatedUsers, currentUser: current };
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: newStatus === 'Locked' ? 'Account Locked' : 'Account Reactivated',
+            message:
+              newStatus === 'Locked'
+                ? 'Your account has been locked by an administrator. Contact support to restore access.'
+                : 'Your account has been reactivated by an administrator. Welcome back.',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: newStatus === 'Locked' ? 'alert' : 'info',
+            category: 'Security',
+            actionUrl: '/profile',
+          };
+          return { users: updatedUsers, currentUser: current, notifications: [notif, ...state.notifications] };
         });
       },
 
@@ -2633,7 +2690,18 @@ export const useBankingStore = create<BankingState>()(
           const current = state.currentUser?.id === userId
             ? { ...state.currentUser, password: state.resetPasswordPin }
             : state.currentUser;
-          return { users: updatedUsers, currentUser: current };
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Password Reset',
+            message: 'An administrator reset your password. Sign in with the temporary PIN and change it in Profile.',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'security',
+            category: 'Security',
+            actionUrl: '/profile',
+          };
+          return { users: updatedUsers, currentUser: current, notifications: [notif, ...state.notifications] };
         });
       },
 
@@ -2643,7 +2711,18 @@ export const useBankingStore = create<BankingState>()(
           const current = state.currentUser?.id === userId
             ? updatedUsers.find((u) => u.id === userId) || state.currentUser
             : state.currentUser;
-          return { users: updatedUsers, currentUser: current };
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Profile Updated by Capital One',
+            message: 'An administrator updated your account profile details.',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'info',
+            category: 'Security',
+            actionUrl: '/profile',
+          };
+          return { users: updatedUsers, currentUser: current, notifications: [notif, ...state.notifications] };
         });
       },
 
