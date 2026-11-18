@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, ShieldCheck, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { HideTerm } from './HideTerm';
 
 interface PreApprovalSimulatorProps {
   isOpen: boolean;
@@ -263,7 +264,7 @@ export const PreApprovalSimulator: React.FC<PreApprovalSimulatorProps> = ({
             </div>
 
             <p className="text-xs text-slate-500 mt-4 leading-relaxed max-w-sm mx-auto">
-              This simulated pre-approval does not guarantee account opening. Final approval is subject to application verification.
+              <HideTerm text="This simulated pre-approval does not guarantee account opening. Final approval is subject to application verification." />
             </p>
 
             <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2.5">

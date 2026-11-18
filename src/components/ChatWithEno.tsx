@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { HideTerm } from './HideTerm';
 import { useBankingStore } from '../store/useBankingStore';
 import {
   Sparkles,
@@ -412,7 +413,7 @@ export const ChatWithEno: React.FC<ChatWithEnoProps> = ({ onNavigate, onOpenPreA
           <div className="p-2.5 bg-slate-950 border-t border-slate-800 text-[11px] flex items-center justify-between text-slate-400 shrink-0">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>256-bit Bank Grade Encrypted Simulation</span>
+              <span><HideTerm text="256-bit Bank Grade Encrypted Simulation" /></span>
             </span>
           </div>
 

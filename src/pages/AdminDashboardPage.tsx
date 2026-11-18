@@ -11,6 +11,7 @@ import {
 } from '../store/AdminStore';
 import { sendReceiptEmail } from '../lib/receiptEmail';
 import { formatDateTime } from '../lib/time';
+import { HideTerm } from '../components/HideTerm';
 import {
   Users,
   CreditCard,
@@ -766,7 +767,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             {users.length === 0 ? (
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-400 space-y-3">
                 <Users className="w-10 h-10 text-slate-500 mx-auto" />
-                <h3 className="text-sm font-bold text-slate-200">Zero Dummy Data &mdash; Directory Clean</h3>
+                <h3 className="text-sm font-bold text-slate-200">Zero <HideTerm text="Dummy Data" /> &mdash; Directory Clean</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
                   The system starts empty. Create an account via <code className="text-sky-300">/enroll</code> (with referral code starts at $500, without starts at $0).
                 </p>
@@ -1306,7 +1307,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     Processing Spinner Message &amp; Withdrawal Disclaimer
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Control the text displayed during simulated transfer spinners and withdrawal risk disclaimers.
+                    <HideTerm text="Control the text displayed during simulated transfer spinners and withdrawal risk disclaimers." />
                   </p>
                 </div>
               </div>

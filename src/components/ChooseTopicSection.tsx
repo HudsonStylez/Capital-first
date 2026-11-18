@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from './HideTerm';
 import { HeartHandshake, FileHeart, Sparkles, ChevronRight, CheckCircle2 } from 'lucide-react';
 
 interface ChooseTopicSectionProps {
@@ -83,7 +84,7 @@ export const ChooseTopicSection: React.FC<ChooseTopicSectionProps> = ({ onSelect
                     isSelected ? 'text-white stroke-[2.2]' : 'text-[#1A1A1A] stroke-[1.8]'
                   }`}
                 />
-                <span className="tracking-tight">{topic.label}</span>
+                <span className="tracking-tight"><HideTerm text={topic.label} /></span>
               </button>
             );
           })}

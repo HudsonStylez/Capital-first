@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from './HideTerm';
 import { ShieldCheck, Check, Sparkles, AlertCircle, ArrowRight, RotateCcw } from 'lucide-react';
 
 interface CreditWiseSectionProps {
@@ -133,7 +134,7 @@ export const CreditWiseSection: React.FC<CreditWiseSectionProps> = ({ onSignUp }
                   <AlertCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Interactive Simulator</h3>
+                  <h3 className="font-bold text-slate-900 text-base"><HideTerm text="Interactive Simulator" /></h3>
                   <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                     Test potential financial decisions before making them to understand potential score fluctuations.
                   </p>
@@ -165,14 +166,14 @@ export const CreditWiseSection: React.FC<CreditWiseSectionProps> = ({ onSignUp }
                     Interactive Tool
                   </span>
                   <h3 className="font-bold text-slate-900 text-lg">
-                    Credit Score Simulator
+                    <HideTerm text="Credit Score Simulator" />
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveSimulations([])}
                   className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition-colors p-1"
-                  title="Reset Simulator"
+                  title="Reset"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset</span>
@@ -184,7 +185,7 @@ export const CreditWiseSection: React.FC<CreditWiseSectionProps> = ({ onSignUp }
                 {/* Score Number & Badge */}
                 <div className="text-center sm:text-left">
                   <span className="text-xs text-slate-500 uppercase font-semibold">
-                    Simulated VantageScore®
+                    <HideTerm text="Simulated VantageScore®" />
                   </span>
                   <div className="text-4xl sm:text-5xl font-extrabold text-slate-900 font-mono tracking-tight my-1 tabular-nums">
                     {currentScore}
@@ -255,7 +256,7 @@ export const CreditWiseSection: React.FC<CreditWiseSectionProps> = ({ onSignUp }
                           </div>
                           <div>
                             <span className="text-xs font-semibold text-slate-800 block">
-                              {opt.label}
+                              <HideTerm text={opt.label} />
                             </span>
                             <span className="text-[10px] text-slate-400">{opt.category}</span>
                           </div>

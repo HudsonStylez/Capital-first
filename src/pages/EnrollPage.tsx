@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from '../components/HideTerm';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
 import { useAdminStore } from '../store/AdminStore';
 import {
@@ -283,7 +284,7 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Security Verification Code (Simulated SMS)
+                        <HideTerm text="Security Verification Code (Simulated SMS)" />
                       </label>
                       <input
                         type="text"

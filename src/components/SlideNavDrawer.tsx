@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from './HideTerm';
 import { X, Search, ChevronRight, CreditCard, Landmark, Car, Briefcase, ShieldCheck, MapPin, HelpCircle, User, LogIn, Download } from 'lucide-react';
 import { CapitalOneLogo } from './CapitalOneLogo';
 import { useEscapeKey } from '../hooks/useEscapeKey';
@@ -206,7 +207,7 @@ export const SlideNavDrawer: React.FC<SlideNavDrawerProps> = ({
                         }}
                         className="w-full min-h-[38px] text-left text-xs font-medium text-slate-600 hover:text-[#005C9D] py-1.5 px-2 rounded hover:bg-sky-50 transition-colors block"
                       >
-                        {subItem.label}
+                        <HideTerm text={subItem.label} />
                       </button>
                     ))}
                   </div>

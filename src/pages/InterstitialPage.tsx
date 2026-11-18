@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from '../components/HideTerm';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
 import {
   CreditCard,
@@ -200,7 +201,7 @@ export const InterstitialPage: React.FC<InterstitialPageProps> = ({ onNavigate }
           {downloadTriggered ? (
             <div className="w-full py-3.5 px-6 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-sm font-bold flex items-center justify-center gap-2 animate-in fade-in">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Simulated: Opening iOS App Store / Google Play...</span>
+              <span><HideTerm text="Simulated: Opening iOS App Store / Google Play..." /></span>
             </div>
           ) : (
             /* Large blue button: "Download the App" */

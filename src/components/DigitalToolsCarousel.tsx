@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from './HideTerm';
 import {
   ChevronDown,
   Home,
@@ -296,7 +297,7 @@ export const DigitalToolsCarousel: React.FC<DigitalToolsCarouselProps> = ({
             {currentSlide.title}
           </h3>
           <p className="text-sm text-[#666666] max-w-sm mx-auto leading-relaxed">
-            {currentSlide.description}
+            <HideTerm text={currentSlide.description} />
           </p>
         </div>
 

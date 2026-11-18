@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { HideTerm } from '../components/HideTerm';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
 import { useBankingStore, User, UserAccount, Transaction, VirtualCard, KycDocument } from '../store/useBankingStore';
 import { BottomNav } from '../components/BottomNav';
@@ -2505,7 +2506,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   <h3 className="font-bold text-slate-900 text-lg">
                     {selectedStockSymbol} &mdash; {stockPrices[selectedStockSymbol].name}
                   </h3>
-                  <span className="text-xs text-slate-500">Live Simulated Equities Feed</span>
+                  <span className="text-xs text-slate-500"><HideTerm text="Live Simulated Equities Feed" /></span>
                 </div>
                 <div className="text-right">
                   <span className="text-2xl font-bold font-mono text-slate-900">

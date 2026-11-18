@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HideTerm } from './HideTerm';
 import {
   Home,
   Gift,
@@ -309,7 +310,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <span className="text-[10px] text-[#005C9D] font-bold">View Score →</span>
                   </div>
                   <p className="text-[11px] text-slate-600 mt-0.5">
-                    Your TransUnion credit score is in the Excellent range (740). Tap to view 6 score factors and simulator.
+                    <HideTerm text="Your TransUnion credit score is in the Excellent range (740). Tap to view 6 score factors and simulator." />
                   </p>
                 </div>
               </button>
