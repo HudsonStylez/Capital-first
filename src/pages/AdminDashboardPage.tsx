@@ -1547,7 +1547,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 <input
                   value={newAccessEmail}
                   onChange={(e) => setNewAccessEmail(e.target.value)}
-                  placeholder="Assign to email (optional)"
+                  placeholder="Note / reference (optional)"
                   className="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
                 />
                 <input

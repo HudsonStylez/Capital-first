@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
+import { AccessCodeHelp } from '../components/AccessCodeHelp';
 import { useAdminStore } from '../store/AdminStore';
 import {
   User as UserIcon,
@@ -20,9 +21,10 @@ interface SignInPageProps {
 }
 
 export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
-  const { login, passkeyLogin, users } = useAdminStore();
+  const { login, passkeyLogin, users, validateAccessCode, enrollmentSettings } = useAdminStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,6 +48,15 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (enrollmentSettings.requireAccessCode) {
+      const chk = validateAccessCode(accessCode);
+      if (!chk.valid) {
+        setErrorMessage(chk.reason || 'A valid access code is required to sign in.');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     setTimeout(() => {
@@ -179,7 +190,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
             {/* Username Input with User Icon */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Username
+                Username or Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -193,7 +204,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
                     setUsername(e.target.value);
                     if (errorMessage) setErrorMessage(null);
                   }}
-                  placeholder="Enter your username"
+                  placeholder="Enter your username or email"
                   className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#005C9D] focus:border-transparent transition-all"
                 />
               </div>
@@ -227,6 +238,28 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
+              </div>
+            </div>
+
+            {/* Access Code (proves membership; any admin-issued code works) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Access Code
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                  placeholder="Enter your access code"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#005C9D] focus:border-transparent transition-all font-mono uppercase tracking-wider"
+                />
+              </div>
+              <div className="mt-2">
+                <AccessCodeHelp />
               </div>
             </div>
 

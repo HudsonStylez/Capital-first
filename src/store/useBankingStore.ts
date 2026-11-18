@@ -505,6 +505,7 @@ export interface BankingState {
     imageDataUrl?: string
   ) => { success: boolean; reference: string; etaHours: number };
   sendSupportMessage: (userId: string, text: string, subject?: string) => void;
+  requestAccessSupport: (email: string, message: string, name?: string) => void;
   adminReplyToSupport: (threadId: string, text: string) => void;
   markSupportThreadRead: (threadId: string, viewer: 'user' | 'admin') => void;
   setSupportThreadStatus: (threadId: string, status: 'open' | 'resolved') => void;
@@ -926,6 +927,54 @@ export const useBankingStore = create<BankingState>()(
         });
       },
 
+      requestAccessSupport: (email, message, name) => {
+        const now = new Date();
+        const threadId = `SUP-PROSPECT-${Date.now()}`;
+        const requester = name?.trim() || email.trim();
+        const thread: SupportThread = {
+          id: threadId,
+          userId: `PROSPECT-${Date.now()}`,
+          userName: name?.trim() || 'Prospective Customer',
+          userEmail: email.trim(),
+          subject: 'Access Code Request',
+          status: 'open',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          messages: [
+            {
+              id: `msg-${Date.now()}`,
+              threadId,
+              sender: 'user',
+              senderName: requester,
+              text: `Access code request from ${email.trim()}: ${message.trim()}`,
+              timestamp: now.toLocaleString(),
+              read: false,
+            },
+          ],
+        };
+        const notif: NotificationItem = {
+          id: `notif-${Date.now()}`,
+          title: 'Access Code Request',
+          message: `${requester} (${email.trim()}) requested an access code.`,
+          timestamp: 'Just now',
+          createdAt: now.toISOString(),
+          unread: true,
+          type: 'alert',
+          category: 'Verification',
+        };
+        const sysLog: SystemLog = {
+          id: `SYS-${Date.now()}`,
+          timestamp: now.toLocaleString('en-US'),
+          action: 'SETTINGS_UPDATE',
+          details: `Access code request from ${email.trim()}`,
+        };
+        set((state) => ({
+          supportThreads: [thread, ...state.supportThreads],
+          notifications: [notif, ...state.notifications],
+          systemLogs: [sysLog, ...state.systemLogs],
+        }));
+      },
+
       adminReplyToSupport: (threadId, text) => {
         if (!text.trim()) return;
         const now = new Date();
@@ -984,7 +1033,9 @@ export const useBankingStore = create<BankingState>()(
 
       login: (username: string, pass: string) => {
         const trimmed = username.trim().toLowerCase();
-        const found = get().users.find((u) => u.username.toLowerCase() === trimmed);
+        const found = get().users.find(
+          (u) => u.username.toLowerCase() === trimmed || (u.email || '').toLowerCase() === trimmed
+        );
 
         if (!found || found.password !== pass) {
           return {
@@ -3094,9 +3145,6 @@ export const useBankingStore = create<BankingState>()(
         if (!match.enabled) return { valid: false, reason: 'This access code has been disabled.' };
         if (match.maxUses > 0 && match.uses >= match.maxUses) {
           return { valid: false, reason: 'This access code has reached its usage limit.' };
-        }
-        if (match.assignedEmail && email && match.assignedEmail.toLowerCase() !== email.trim().toLowerCase()) {
-          return { valid: false, reason: 'This access code is not assigned to that email address.' };
         }
         return { valid: true };
       },

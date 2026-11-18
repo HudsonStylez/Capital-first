@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
+import { AccessCodeHelp } from '../components/AccessCodeHelp';
 import { useAdminStore } from '../store/AdminStore';
 import {
   ShieldCheck,
@@ -315,6 +316,9 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
                       <span className="text-[11px] text-slate-400 mt-1 block">
                         An access code is required to create online access. Contact your administrator to receive yours.
                       </span>
+                      <div className="mt-2">
+                        <AccessCodeHelp />
+                      </div>
                     </div>
 
                     <div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Lock, Eye, EyeOff, ShieldCheck, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react';
 import { CapitalOneLogo } from './CapitalOneLogo';
 import { useAdminStore } from '../store/AdminStore';
+import { AccessCodeHelp } from './AccessCodeHelp';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface SignInModalProps {
@@ -11,9 +12,10 @@ interface SignInModalProps {
 }
 
 export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onNavigate }) => {
-  const { login } = useAdminStore();
+  const { login, validateAccessCode, enrollmentSettings } = useAdminStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +29,15 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onNav
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) return;
+
+    // Access code proves membership (any admin-issued code works).
+    if (enrollmentSettings.requireAccessCode) {
+      const chk = validateAccessCode(accessCode);
+      if (!chk.valid) {
+        setErrorMessage(chk.reason || 'A valid access code is required to sign in.');
+        return;
+      }
+    }
 
     setIsLoading(true);
     setErrorMessage(null);
@@ -131,14 +142,14 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onNav
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Username
+                Username or Email
               </label>
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter your username or email"
                 className="w-full text-sm px-3.5 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005C9D] focus:border-transparent transition-all"
               />
             </div>
@@ -164,6 +175,22 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onNav
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Access Code
+              </label>
+              <input
+                type="text"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                placeholder="Enter your access code"
+                className="w-full text-sm px-3.5 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005C9D] font-mono uppercase tracking-wider"
+              />
+              <div className="mt-2">
+                <AccessCodeHelp />
               </div>
             </div>
 
