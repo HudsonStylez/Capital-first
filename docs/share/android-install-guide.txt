@@ -1,0 +1,18 @@
+Install Capital One (Android)
+
+1. Tap the APK file you received to start the install.
+2. If you see "For your security, your phone can't install unknown apps from this
+   source", tap Settings and turn on "Allow from this source" for the app you
+   opened it with (Chrome or Files).
+   - Android 8.0+: Settings > Apps > Special app access > Install unknown apps >
+     choose your browser > Allow from this source.
+   - Android 13/14: if something says "Restricted setting", open the app's App info
+     > tap the three dots > Allow restricted settings (one-time).
+3. Tap Install, then Open.
+4. If Play Protect warns "Unsafe app blocked" or "unknown developer", tap
+   More details > Install anyway. This is normal for any app not from the store.
+5. The app opens full-screen with no address bar. Works offline once opened.
+
+Trouble? If the install button is greyed out, open Settings > Apps > Special app
+access > Install unknown apps and enable it for Chrome or your Files app, then
+tap the APK again.
