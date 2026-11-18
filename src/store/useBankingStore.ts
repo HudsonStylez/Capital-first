@@ -68,6 +68,7 @@ export interface KycDocument {
   docTypeName: string;
   fileName: string;
   fileSize?: string;
+  imageDataUrl?: string;
   idNumber?: string;
   utilityProvider?: string;
   uploadedAt: string;
@@ -587,7 +588,7 @@ export interface BankingState {
     userId: string,
     docType: 'driver_license' | 'passport' | 'utility_bill',
     fileName: string,
-    metadata?: { idNumber?: string; utilityProvider?: string; fileSize?: string }
+    metadata?: { idNumber?: string; utilityProvider?: string; fileSize?: string; imageDataUrl?: string }
   ) => void;
   uploadKycPackage: (
     userId: string,
@@ -597,6 +598,7 @@ export interface BankingState {
       idNumber?: string;
       utilityProvider?: string;
       fileSize?: string;
+      imageDataUrl?: string;
     }>
   ) => void;
   reviewKycDocument: (
@@ -1887,6 +1889,7 @@ export const useBankingStore = create<BankingState>()(
           idNumber: metadata?.idNumber,
           utilityProvider: metadata?.utilityProvider,
           fileSize: metadata?.fileSize || '2.4 MB',
+          imageDataUrl: metadata?.imageDataUrl,
           uploadedAt: 'Just now',
           status: 'pending',
           reviewDeadline: deadline,
@@ -1966,6 +1969,7 @@ export const useBankingStore = create<BankingState>()(
           idNumber: d.idNumber,
           utilityProvider: d.utilityProvider,
           fileSize: d.fileSize || '3.1 MB',
+          imageDataUrl: d.imageDataUrl,
           uploadedAt: 'Just now',
           status: 'pending' as const,
           reviewDeadline: deadline,

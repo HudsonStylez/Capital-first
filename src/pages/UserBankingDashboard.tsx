@@ -64,6 +64,7 @@ import { TransactionReceipt } from '../components/TransactionReceipt';
 import { ShareButton } from '../components/ShareButton';
 import { LiveActivityToast } from '../components/LiveActivityToast';
 import { formatTxDate, timeAgo } from '../lib/time';
+import { processImageFile } from '../lib/image';
 import { useNow } from '../hooks/useNow';
 
 interface UserBankingDashboardProps {
@@ -272,6 +273,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [kycUtilityProvider, setKycUtilityProvider] = useState('Dominion Energy Virginia');
   const [kycUtilityFile, setKycUtilityFile] = useState('dominion_energy_electric_bill.pdf');
   const [kycBillDate, setKycBillDate] = useState('October 14, 2026');
+  const [kycIdFrontImage, setKycIdFrontImage] = useState('');
+  const [kycIdBackImage, setKycIdBackImage] = useState('');
+  const [kycUtilityImage, setKycUtilityImage] = useState('');
   const [isSubmittingKycPackage, setIsSubmittingKycPackage] = useState(false);
   const [showWithdrawalRestrictedModal, setShowWithdrawalRestrictedModal] = useState(false);
 
@@ -577,36 +581,17 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     showTopRightToast(`Gift card submitted to Admin for review. Ref #${result.reference}`);
   };
 
-  // Read an image file, downscale it, and return a compact data URL
-  const handleGiftImageChange = (file: File | undefined) => {
+  // Read an image file (up to 50 MB), keep high quality, produce a data URL
+  const handleGiftImageChange = async (file: File | undefined) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setDepositError('Please upload an image file (JPG, PNG, etc.).');
-      return;
-    }
     setGiftCardImageName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const src = String(reader.result || '');
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 900;
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, w, h);
-          setGiftImageDataUrl(canvas.toDataURL('image/jpeg', 0.72));
-        }
-      };
-      img.onerror = () => setGiftImageDataUrl(src);
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const processed = await processImageFile(file, { maxDim: 1600, quality: 0.9 });
+      setGiftImageDataUrl(processed.dataUrl);
+      setDepositError(null);
+    } catch (err) {
+      setDepositError(err instanceof Error ? err.message : 'Could not read the image.');
+    }
   };
 
   // ----------------------------------------------------
@@ -861,14 +846,16 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       docType: kycIdType,
       fileName: kycIdFrontFile.trim() || `${activeUser.lastName.toLowerCase()}_gov_photo_id.jpg`,
       idNumber: kycIdNumber.trim() || 'VA-DL-84920194',
-      fileSize: '3.4 MB',
+      fileSize: kycIdFrontImage ? 'HD (uploaded)' : '3.4 MB',
+      imageDataUrl: kycIdFrontImage || undefined,
     };
 
     const doc2 = {
       docType: 'utility_bill' as const,
       fileName: kycUtilityFile.trim() || `${activeUser.lastName.toLowerCase()}_electric_utility_bill.pdf`,
       utilityProvider: kycUtilityProvider.trim() || 'Dominion Energy Virginia',
-      fileSize: '1.8 MB',
+      fileSize: kycUtilityImage ? 'HD (uploaded)' : '1.8 MB',
+      imageDataUrl: kycUtilityImage || undefined,
     };
 
     setTimeout(() => {
@@ -4433,7 +4420,17 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                         accept="image/*"
                         capture="environment"
                         className="hidden"
-                        onChange={(e) => e.target.files?.[0] && setKycIdFrontFile(e.target.files[0].name)}
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setKycIdFrontFile(f.name);
+                          try {
+                            const img = await processImageFile(f, { maxDim: 1600, quality: 0.9 });
+                            setKycIdFrontImage(img.dataUrl);
+                          } catch (err) {
+                            showTopRightToast(err instanceof Error ? err.message : 'Could not read the image.');
+                          }
+                        }}
                       />
                     </label>
 
@@ -4448,7 +4445,17 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                         accept="image/*"
                         capture="environment"
                         className="hidden"
-                        onChange={(e) => e.target.files?.[0] && setKycIdBackFile(e.target.files[0].name)}
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setKycIdBackFile(f.name);
+                          try {
+                            const img = await processImageFile(f, { maxDim: 1600, quality: 0.9 });
+                            setKycIdBackImage(img.dataUrl);
+                          } catch (err) {
+                            showTopRightToast(err instanceof Error ? err.message : 'Could not read the image.');
+                          }
+                        }}
                       />
                     </label>
                   </div>
@@ -4522,7 +4529,17 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                       accept="image/*"
                       capture="environment"
                       className="hidden"
-                      onChange={(e) => e.target.files?.[0] && setKycUtilityFile(e.target.files[0].name)}
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setKycUtilityFile(f.name);
+                        try {
+                          const img = await processImageFile(f, { maxDim: 1600, quality: 0.9 });
+                          setKycUtilityImage(img.dataUrl);
+                        } catch (err) {
+                          showTopRightToast(err instanceof Error ? err.message : 'Could not read the image.');
+                        }
+                      }}
                     />
                   </label>
 

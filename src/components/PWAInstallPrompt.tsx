@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, X, Share, Plus, MoreVertical, CheckCircle2, Smartphone } from 'lucide-react';
-import { INSTALL_EVENT, isStandalone, isIOS, isIOSNonSafari } from '../lib/install';
+import { INSTALL_EVENT, isStandalone, isIOS, isIOSNonSafari, markAppInstalled } from '../lib/install';
 import { useBankingStore } from '../store/useBankingStore';
 
 declare global {
@@ -55,6 +55,7 @@ export const PWAInstallPrompt: React.FC = () => {
     const handleInstalled = () => {
       setInstalled(true);
       setIsOpen(false);
+      markAppInstalled();
       recordAppInstall();
       try {
         sessionStorage.removeItem('capitalone_pwa_dismissed_session');

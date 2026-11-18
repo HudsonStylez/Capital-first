@@ -8,8 +8,27 @@ export function showInstallPrompt(): void {
   }
 }
 
+export function markAppInstalled(): void {
+  try {
+    localStorage.setItem('capitalone_app_installed', '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function wasAppInstalled(): boolean {
+  try {
+    return localStorage.getItem('capitalone_app_installed') === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
+
+  // Once we've observed an install, never show install UI again in this browser.
+  if (wasAppInstalled()) return true;
 
   // Capacitor / native WebView (our packaged APK): always "installed".
   const cap = (window as any).Capacitor;

@@ -2826,6 +2826,26 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </span>
               </div>
 
+              {inspectingKycDoc.doc.imageDataUrl && (
+                <div className="rounded-xl overflow-hidden border border-slate-700 bg-black/40">
+                  <img
+                    src={inspectingKycDoc.doc.imageDataUrl}
+                    alt="Uploaded document"
+                    className="w-full max-h-80 object-contain bg-black/20"
+                  />
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-900">
+                    <span className="text-[11px] text-slate-400">Customer-uploaded document</span>
+                    <a
+                      href={inspectingKycDoc.doc.imageDataUrl}
+                      download={inspectingKycDoc.doc.fileName || 'document.jpg'}
+                      className="text-[11px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* High-fidelity Visual Document Simulator Graphic */}
               <div className="p-5 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 border-2 border-slate-700 rounded-xl relative overflow-hidden text-xs">
                 <div className="flex items-center justify-between mb-3">

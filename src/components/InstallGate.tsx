@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Download, Share, Plus, MoreVertical, Smartphone, ShieldCheck } from 'lucide-react';
+import { Download, Share, Plus, MoreVertical, Smartphone, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useBankingStore } from '../store/useBankingStore';
-import { isStandalone, isIOS, isIOSNonSafari } from '../lib/install';
+import { isStandalone, wasAppInstalled, markAppInstalled, isIOS, isIOSNonSafari } from '../lib/install';
 
 /**
  * Blocks the app until it is installed (when the admin enables "require install").
- * Once installed, the app auto-opens (reload) and subsequent visits run standalone.
+ * After a successful install, shows an "open the app" prompt, remembers the
+ * install permanently (so the gate never reappears) and lets the user continue.
  * Pass `bypass` for routes that must remain reachable (e.g. /admin).
  */
 export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean }> = ({
@@ -13,7 +14,8 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
   bypass = false,
 }) => {
   const requireInstall = useBankingStore((s) => s.enrollmentSettings?.requireInstall ?? true);
-  const [installed, setInstalled] = useState<boolean>(isStandalone());
+  const [installed, setInstalled] = useState<boolean>(() => isStandalone() || wasAppInstalled());
+  const [justInstalled, setJustInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState<boolean>(
     () => typeof window !== 'undefined' && Boolean((window as any).__deferredPwaPrompt)
   );
@@ -21,9 +23,9 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
 
   useEffect(() => {
     const onInstalled = () => {
+      markAppInstalled();
       setInstalled(true);
-      // Auto-open the installed app and leave the browser/webview.
-      setTimeout(() => window.location.reload(), 500);
+      setJustInstalled(true);
     };
     const onAvailable = () => setCanInstall(true);
     window.addEventListener('appinstalled', onInstalled);
@@ -41,8 +43,9 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
       try {
         const { outcome } = await prompt.userChoice;
         if (outcome === 'accepted') {
+          markAppInstalled();
           setInstalled(true);
-          setTimeout(() => window.location.reload(), 600);
+          setJustInstalled(true);
         }
       } catch {
         /* ignore */
@@ -57,6 +60,29 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
     }
     setShowManual(true);
   };
+
+  // Post-install prompt: tell the user to open the installed app.
+  if (justInstalled) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-[#001B3A] via-[#003865] to-[#005C9D] px-5 py-10">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 text-center">
+          <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto mb-3" />
+          <h1 className="text-xl font-bold text-slate-900">Installation complete</h1>
+          <p className="text-sm text-slate-500 mt-2">
+            Tap the <strong>Capital One icon</strong> on your home screen (or app drawer) to open the app. It will launch
+            full screen with no address bar.
+          </p>
+          <button
+            type="button"
+            onClick={() => setJustInstalled(false)}
+            className="mt-6 w-full py-3.5 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold text-sm rounded-xl transition-colors cursor-pointer"
+          >
+            Continue here instead
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!requireInstall || bypass || installed) return <>{children}</>;
 
@@ -74,8 +100,7 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
           />
           <h1 className="text-xl font-bold text-slate-900">Install the Capital One app</h1>
           <p className="text-sm text-slate-500 mt-2">
-            Installation is required to continue. Add the app to your device, then it opens automatically — full screen,
-            with no address bar.
+            Installation is required to continue. Add the app to your device, then open it from your home screen.
           </p>
 
           {ios ? (
@@ -108,6 +133,17 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
                     <strong>Step 2.</strong> Choose <strong>Add to Home Screen</strong>.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAppInstalled();
+                    setInstalled(true);
+                    setJustInstalled(true);
+                  }}
+                  className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl cursor-pointer"
+                >
+                  I've added it to my home screen
+                </button>
               </div>
             )
           ) : (
