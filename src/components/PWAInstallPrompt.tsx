@@ -84,9 +84,10 @@ export const PWAInstallPrompt: React.FC = () => {
   }, [open]);
 
   const handleInstall = async () => {
-    const prompt =
+    const getPrompt = () =>
       deferredPrompt || (window as any).__deferredPwaPrompt || (window as any).__pwaInstallPrompt;
-    if (prompt && typeof prompt.prompt === 'function') {
+
+    const invoke = async (prompt: any) => {
       prompt.prompt();
       const { outcome } = await prompt.userChoice;
       if (outcome === 'accepted') {
@@ -97,10 +98,25 @@ export const PWAInstallPrompt: React.FC = () => {
       setCanInstall(false);
       (window as any).__deferredPwaPrompt = null;
       (window as any).__pwaInstallPrompt = null;
-    } else {
-      // No native prompt available — reveal manual guidance, keep the button.
-      setShowManual(true);
+    };
+
+    // Happy path: native installer available — no tips shown.
+    let prompt = getPrompt();
+    if (prompt && typeof prompt.prompt === 'function') {
+      await invoke(prompt);
+      return;
     }
+
+    // Grace period: beforeinstallprompt may fire a moment late.
+    await new Promise((r) => setTimeout(r, 700));
+    prompt = getPrompt();
+    if (prompt && typeof prompt.prompt === 'function') {
+      await invoke(prompt);
+      return;
+    }
+
+    // Genuine difficulty only — now reveal manual guidance.
+    setShowManual(true);
   };
 
   const handleDismiss = () => {
