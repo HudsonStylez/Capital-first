@@ -10,8 +10,20 @@ export function showInstallPrompt(): void {
 
 export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
+
+  // Capacitor / native WebView (our packaged APK): always "installed".
+  const cap = (window as any).Capacitor;
+  if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) return true;
+  if (typeof (window as any).AndroidBridge !== 'undefined') return true;
+
+  // Trusted Web Activity.
+  const ref = document.referrer || '';
+  if (ref.startsWith('android-app://')) return true;
+
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
     (window.navigator as unknown as { standalone?: boolean })?.standalone === true
   );
 }

@@ -117,6 +117,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     toggleAccessCode,
     deleteAccessCode,
     setEnrollmentSettings,
+    updateAccessCode,
     updateFundsLock,
     isFundsLocked,
   } = useAdminStore();
@@ -137,6 +138,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   // Access codes & fund-lock controls
   const [newAccessLabel, setNewAccessLabel] = useState('');
   const [newAccessEmail, setNewAccessEmail] = useState('');
+  const [newAccessMax, setNewAccessMax] = useState('0');
   const [lockTargetUser, setLockTargetUser] = useState<User | null>(null);
   const [lockUntil, setLockUntil] = useState('');
   const [lockRequirement, setLockRequirement] = useState<'none' | 'kyc' | 'admin_release'>('none');
@@ -1548,12 +1550,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   placeholder="Assign to email (optional)"
                   className="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
                 />
+                <input
+                  type="number"
+                  min={0}
+                  value={newAccessMax}
+                  onChange={(e) => setNewAccessMax(e.target.value)}
+                  title="Max uses (0 = unlimited)"
+                  placeholder="Max uses"
+                  className="w-24 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                />
                 <button
                   type="button"
                   onClick={() => {
-                    generateAccessCode(newAccessLabel, newAccessEmail);
+                    generateAccessCode(newAccessLabel, newAccessEmail, parseInt(newAccessMax, 10) || 0);
                     setNewAccessLabel('');
                     setNewAccessEmail('');
+                    setNewAccessMax('0');
                     setToastNotice('New access code generated.');
                     setTimeout(() => setToastNotice(null), 2500);
                   }}
@@ -1582,8 +1594,17 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                         <td className="py-2 pr-3 text-slate-300">{c.label}</td>
                         <td className="py-2 pr-3 text-slate-400">{c.assignedEmail || '—'}</td>
                         <td className="py-2 pr-3 text-slate-400">
-                          {c.uses}
-                          {c.maxUses > 0 ? ` / ${c.maxUses}` : ''}
+                          <div className="flex items-center gap-1.5">
+                            <span className="tabular-nums">{c.uses} /</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={c.maxUses}
+                              onChange={(e) => updateAccessCode(c.id, { maxUses: parseInt(e.target.value, 10) || 0 })}
+                              title="Max uses (0 = unlimited)"
+                              className="w-16 px-1.5 py-1 text-[11px] bg-slate-800 border border-slate-700 rounded text-white"
+                            />
+                          </div>
                         </td>
                         <td className="py-2 pr-3">
                           <span

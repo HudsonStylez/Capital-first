@@ -682,7 +682,8 @@ export interface BankingState {
   removeExternalAccount: (userId: string, accountId: string) => void;
 
   // Access Codes & Enrollment Controls
-  generateAccessCode: (label?: string, assignedEmail?: string) => AccessCode;
+  generateAccessCode: (label?: string, assignedEmail?: string, maxUses?: number) => AccessCode;
+  updateAccessCode: (id: string, updates: Partial<AccessCode>) => void;
   rotateAccessCode: (id: string) => void;
   toggleAccessCode: (id: string) => void;
   deleteAccessCode: (id: string) => void;
@@ -3036,19 +3037,25 @@ export const useBankingStore = create<BankingState>()(
       },
 
       // ---------------- Access Codes & Enrollment ----------------
-      generateAccessCode: (label, assignedEmail) => {
+      generateAccessCode: (label, assignedEmail, maxUses) => {
         const code: AccessCode = {
           id: `AC-${Date.now()}`,
           code: makeAccessCode(),
           label: label?.trim() || 'Generated Code',
           assignedEmail: assignedEmail?.trim() || undefined,
           enabled: true,
-          maxUses: 0,
+          maxUses: maxUses && maxUses > 0 ? maxUses : 0,
           uses: 0,
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ accessCodes: [code, ...state.accessCodes] }));
         return code;
+      },
+
+      updateAccessCode: (id, updates) => {
+        set((state) => ({
+          accessCodes: state.accessCodes.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        }));
       },
 
       rotateAccessCode: (id) => {
