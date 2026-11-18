@@ -26,6 +26,7 @@ import { SignInModal } from './components/SignInModal';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { ShareButton } from './components/ShareButton';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { InstallGate } from './components/InstallGate';
 import { TransactionReceipt } from './components/TransactionReceipt';
 
 // Dedicated simulation routes
@@ -354,7 +355,9 @@ function AppContent() {
         </div>
       )}
       <main className="flex-1 w-full">
-        {renderRouteContent()}
+        <InstallGate bypass={currentPath === '/admin' || currentPath === '/interstitial'}>
+          {renderRouteContent()}
+        </InstallGate>
       </main>
 
       {/* Slide-Out Navigation Drawer */}

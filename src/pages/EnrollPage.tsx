@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { HideTerm } from '../components/HideTerm';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
 import { useAdminStore } from '../store/AdminStore';
 import {
@@ -19,7 +18,7 @@ interface EnrollPageProps {
 }
 
 export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCheck = false }) => {
-  const { setPendingUser, pendingUser, enrollUser } = useAdminStore();
+  const { setPendingUser, pendingUser, enrollUser, users, validateAccessCode } = useAdminStore();
 
   // Step 1: Personal Info
   const [lastName, setLastName] = useState(pendingUser?.lastName || '');
@@ -32,9 +31,10 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [email, setEmail] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [enrollSuccess, setEnrollSuccess] = useState(false);
+  const [enrollError, setEnrollError] = useState<string | null>(null);
 
   const handleStartEnrollment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +52,29 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
 
   const handleCompleteSecurityCheck = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername || !newPassword || !email) return;
+    setEnrollError(null);
+
+    if (!newUsername || !newPassword || !email) {
+      setEnrollError('Please complete all required fields.');
+      return;
+    }
+
+    // Does an account with this email already exist?
+    const exists = users.some((u) => (u.email || '').toLowerCase() === email.trim().toLowerCase());
+    if (exists) {
+      setEnrollError('An account with this email already exists. Try signing in instead.');
+      return;
+    }
+
+    // Validate the admin-issued access code (priority gate on join).
+    const check = validateAccessCode(accessCode, email);
+    if (!check.valid) {
+      setEnrollError(check.reason || 'A valid access code is required to enroll.');
+      return;
+    }
 
     const chosenFirstName = firstName.trim() || 'Alex';
-    enrollUser(newUsername, newPassword, chosenFirstName, email, referralCode);
+    enrollUser(newUsername, newPassword, chosenFirstName, email, referralCode, accessCode);
     setEnrollSuccess(true);
 
     setTimeout(() => {
@@ -284,17 +303,17 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        <HideTerm text="Security Verification Code (Simulated SMS)" />
+                        Access Code
                       </label>
                       <input
                         type="text"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value)}
-                        placeholder="Enter 6-digit code (e.g. 849201)"
-                        className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#005C9D] font-mono"
+                        value={accessCode}
+                        onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                        placeholder="Enter the access code from your administrator"
+                        className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#005C9D] font-mono uppercase tracking-wider"
                       />
                       <span className="text-[11px] text-slate-400 mt-1 block">
-                        We sent a code to the mobile number associated with your records.
+                        An access code is required to create online access. Contact your administrator to receive yours.
                       </span>
                     </div>
 
@@ -318,6 +337,13 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
                         Accounts created with a referral code start with an opening balance of <strong>$500.00</strong>. Accounts created without a referral code start with <strong>$0.00</strong>.
                       </span>
                     </div>
+
+                    {enrollError && (
+                      <div className="flex items-start gap-2 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs">
+                        <span className="font-bold">!</span>
+                        <span>{enrollError}</span>
+                      </div>
+                    )}
 
                     <button
                       type="submit"

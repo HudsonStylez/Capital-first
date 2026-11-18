@@ -109,6 +109,10 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     isBalanceHidden,
     toggleBalanceHidden,
     submitGiftCard,
+    updateFundsLock,
+    isFundsLocked,
+    addExternalAccount,
+    removeExternalAccount,
   } = useBankingStore();
 
   // Keep active user synced with state
@@ -217,6 +221,15 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [isProcessingWithdrawal, setIsProcessingWithdrawal] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [showFirstDepositAlert, setShowFirstDepositAlert] = useState(false);
+
+  // Add external (recipient) bank account
+  const [showAddAccountForm, setShowAddAccountForm] = useState(false);
+  const [newBankNickname, setNewBankNickname] = useState('');
+  const [newBankHolder, setNewBankHolder] = useState('');
+  const [newBankName, setNewBankName] = useState('');
+  const [newBankRouting, setNewBankRouting] = useState('');
+  const [newBankAccount, setNewBankAccount] = useState('');
+  const [newBankType, setNewBankType] = useState<'checking' | 'savings'>('checking');
 
   // Pay Bill Modal State (With Full Biller Fields)
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -561,6 +574,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       giftImageDataUrl
     );
     setGiftSubmitResult(result);
+    showTopRightToast(`Gift card submitted to Admin for review. Ref #${result.reference}`);
   };
 
   // Read an image file, downscale it, and return a compact data URL
@@ -599,6 +613,13 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   // 2. CHECK & EXECUTE WITHDRAWAL
   // ----------------------------------------------------
   const handleInitiateWithdrawalClick = () => {
+    // 0. Funds Lock enforcement (self-lock or admin override)
+    const wLock = isFundsLocked(activeUser.id);
+    if (wLock.locked) {
+      showTopRightToast(wLock.reason || 'Your funds are locked.');
+      return;
+    }
+
     // 1. Account Activation / Identity Verification Enforcement
     if (activeUser.kycStatus !== 'verified') {
       setShowWithdrawalRestrictedModal(true);
@@ -707,6 +728,11 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     e.preventDefault();
     const amount = parseFloat(payAmount);
 
+    if (isFundsLocked(activeUser.id).locked) {
+      setPaymentError(isFundsLocked(activeUser.id).reason || 'Your funds are locked.');
+      return;
+    }
+
     if (isNaN(amount) || amount < 0.01) {
       setPaymentError('Payment amount must be at least $0.01.');
       return;
@@ -752,6 +778,11 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const handleExecuteTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(transferAmount);
+
+    if (isFundsLocked(activeUser.id).locked) {
+      setTransferError(isFundsLocked(activeUser.id).reason || 'Your funds are locked.');
+      return;
+    }
 
     if (isNaN(amount) || amount < 0.01) {
       setTransferError('Transfer amount must be at least $0.01.');
@@ -1288,8 +1319,76 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   <PlusCircle className="w-4 h-4 text-emerald-200" />
                   <span>Add Money</span>
                 </button>
+
+                {/* 4. Lock / Unlock My Funds */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!activeUser) return;
+                    if (isFundsLocked(activeUser.id).locked) {
+                      updateFundsLock(activeUser.id, { locked: false }, 'user');
+                      showTopRightToast('Your funds are unlocked.');
+                    } else {
+                      const until = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                      updateFundsLock(
+                        activeUser.id,
+                        { locked: true, lockedUntil: until, requirement: 'none', reason: 'Self-locked by you' },
+                        'user'
+                      );
+                      showTopRightToast('Your funds are locked for security.');
+                    }
+                  }}
+                  className={`px-4 py-2.5 font-bold text-xs rounded-lg transition-colors shadow-sm cursor-pointer flex items-center gap-1.5 ${
+                    activeUser && isFundsLocked(activeUser.id).locked
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : 'bg-amber-500 hover:bg-amber-600 text-white'
+                  }`}
+                >
+                  {activeUser && isFundsLocked(activeUser.id).locked ? (
+                    <>
+                      <Unlock className="w-4 h-4" />
+                      <span>Unlock Funds</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Lock Funds</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
+
+            {/* Funds Lock Banner (self-lock or admin override) */}
+            {activeUser && isFundsLocked(activeUser.id).locked && (
+              <div className="bg-red-50/90 border border-red-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 text-red-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-red-950">Outbound Funds Locked</h4>
+                    <p className="text-[11px] text-red-800 mt-0.5">
+                      {isFundsLocked(activeUser.id).reason} Withdrawals, transfers, and payments are blocked until this is cleared.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeUser.fundsLock?.by === 'admin') {
+                      showTopRightToast('This lock was placed by Capital One. Contact support to release it.');
+                      return;
+                    }
+                    updateFundsLock(activeUser.id, { locked: false }, 'user');
+                    showTopRightToast('Your funds are unlocked.');
+                  }}
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm cursor-pointer shrink-0"
+                >
+                  {activeUser.fundsLock?.by === 'admin' ? 'Contact Support' : 'Unlock My Funds'}
+                </button>
+              </div>
+            )}
 
             {/* Account Activation & KYC Status Banner */}
             {activeUser.kycStatus !== 'verified' && (
@@ -3330,6 +3429,141 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   value={withdrawDestinationId}
                   onChange={(val) => setWithdrawDestinationId(val)}
                 />
+
+                {/* Linked external bank accounts */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      My Linked Bank Accounts
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddAccountForm((v) => !v)}
+                      className="text-[11px] font-bold text-[#005C9D] hover:underline cursor-pointer"
+                    >
+                      {showAddAccountForm ? 'Cancel' : '+ Add account'}
+                    </button>
+                  </div>
+
+                  {(activeUser.externalAccounts || []).length === 0 && !showAddAccountForm && (
+                    <p className="text-[11px] text-slate-500">
+                      No linked accounts yet. Add one to fill in transfer details instantly.
+                    </p>
+                  )}
+
+                  {(activeUser.externalAccounts || []).map((acc) => (
+                    <div
+                      key={acc.id}
+                      className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWithdrawRecipientName(acc.holderName);
+                          setWithdrawBankName(acc.bankName);
+                          setWithdrawRoutingNumber(acc.routingNumber);
+                          setWithdrawAccountNumber(acc.accountNumber);
+                          setWithdrawConfirmAccountNumber(acc.accountNumber);
+                        }}
+                        className="text-left flex-1 cursor-pointer"
+                      >
+                        <span className="block text-xs font-bold text-slate-900">{acc.nickname}</span>
+                        <span className="block text-[11px] text-slate-500">
+                          {acc.bankName} · ...{acc.accountNumber.slice(-4)} · {acc.accountType}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removeExternalAccount(activeUser.id, acc.id);
+                          showTopRightToast('Linked account removed.');
+                        }}
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {showAddAccountForm && (
+                    <div className="space-y-2.5 pt-1">
+                      <input
+                        value={newBankNickname}
+                        onChange={(e) => setNewBankNickname(e.target.value)}
+                        placeholder="Nickname (e.g. My Chase Account)"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                      />
+                      <input
+                        value={newBankHolder}
+                        onChange={(e) => setNewBankHolder(e.target.value)}
+                        placeholder="Account holder name"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                      />
+                      <input
+                        value={newBankName}
+                        onChange={(e) => setNewBankName(e.target.value)}
+                        placeholder="Bank name"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                      />
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <input
+                          value={newBankRouting}
+                          onChange={(e) => setNewBankRouting(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                          placeholder="Routing (9 digits)"
+                          className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                        />
+                        <input
+                          value={newBankAccount}
+                          onChange={(e) => setNewBankAccount(e.target.value.replace(/\D/g, ''))}
+                          placeholder="Account number"
+                          className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                        />
+                      </div>
+                      <select
+                        value={newBankType}
+                        onChange={(e) => setNewBankType(e.target.value as 'checking' | 'savings')}
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                      >
+                        <option value="checking">Checking</option>
+                        <option value="savings">Savings</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            !newBankNickname.trim() ||
+                            !newBankHolder.trim() ||
+                            !newBankName.trim() ||
+                            newBankRouting.length !== 9 ||
+                            newBankAccount.length < 4
+                          ) {
+                            showTopRightToast('Complete all fields (routing must be 9 digits).');
+                            return;
+                          }
+                          addExternalAccount(activeUser.id, {
+                            nickname: newBankNickname.trim(),
+                            holderName: newBankHolder.trim(),
+                            bankName: newBankName.trim(),
+                            routingNumber: newBankRouting,
+                            accountNumber: newBankAccount,
+                            accountType: newBankType,
+                          });
+                          setNewBankNickname('');
+                          setNewBankHolder('');
+                          setNewBankName('');
+                          setNewBankRouting('');
+                          setNewBankAccount('');
+                          setShowAddAccountForm(false);
+                          showTopRightToast('Bank account linked successfully.');
+                        }}
+                        className="w-full py-2.5 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold text-xs rounded-lg cursor-pointer"
+                      >
+                        Save &amp; Link Account
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Complete Banking Fields for Real Withdrawal */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">

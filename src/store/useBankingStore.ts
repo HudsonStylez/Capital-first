@@ -29,7 +29,7 @@ export interface UserAccount {
 export interface ActivityLogItem {
   id: string;
   timestamp: string;
-  action: 'PAYMENT' | 'WITHDRAWAL' | 'DEPOSIT' | 'TRANSFER' | 'LOGIN' | 'LEDGER_ADJUSTMENT' | 'KYC_UPLOAD' | 'CARD_CREATED' | 'STOCK_TRADE';
+  action: 'PAYMENT' | 'WITHDRAWAL' | 'DEPOSIT' | 'TRANSFER' | 'LOGIN' | 'LEDGER_ADJUSTMENT' | 'KYC_UPLOAD' | 'CARD_CREATED' | 'STOCK_TRADE' | 'FUNDS_LOCK' | 'BANK_ACCOUNT';
   details: string;
   amount?: number;
 }
@@ -120,6 +120,8 @@ export interface User {
   kycStatus?: 'not_submitted' | 'pending' | 'verified' | 'rejected';
   stockHoldings?: StockHolding[];
   usedReferralCode?: string;
+  fundsLock?: FundsLock;
+  externalAccounts?: ExternalBankAccount[];
 }
 
 export interface PaymentOption {
@@ -221,7 +223,10 @@ export interface SystemLog {
     | 'SETTINGS_UPDATE'
     | 'KYC_REVIEW'
     | 'TRANSACTION_MODERATION'
-    | 'VIRTUAL_CARD';
+    | 'VIRTUAL_CARD'
+    | 'FUNDS_LOCK'
+    | 'ACCESS_CODE'
+    | 'BANK_ACCOUNT';
   userId?: string;
   userName?: string;
   details: string;
@@ -253,6 +258,66 @@ export interface PendingUser {
   dob: string;
   useAccountInstead?: boolean;
 }
+
+export interface FundsLock {
+  locked: boolean;
+  lockedUntil?: string;
+  requirement?: 'none' | 'kyc' | 'admin_release';
+  reason?: string;
+  by?: 'user' | 'admin';
+  updatedAt?: string;
+}
+
+export interface ExternalBankAccount {
+  id: string;
+  nickname: string;
+  holderName: string;
+  bankName: string;
+  routingNumber: string;
+  accountNumber: string;
+  accountType: 'checking' | 'savings';
+  verified: boolean;
+  createdAt: string;
+}
+
+export interface AccessCode {
+  id: string;
+  code: string;
+  label?: string;
+  assignedEmail?: string;
+  enabled: boolean;
+  maxUses: number;
+  uses: number;
+  createdAt: string;
+  lastRotatedAt?: string;
+}
+
+export interface EnrollmentSettings {
+  requireAccessCode: boolean;
+  requireInstall: boolean;
+}
+
+const ACCESS_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function makeAccessCode(): string {
+  const block = () =>
+    Array.from({ length: 4 }, () => ACCESS_CODE_ALPHABET[Math.floor(Math.random() * ACCESS_CODE_ALPHABET.length)]).join('');
+  return `${block()}-${block()}-${block()}`;
+}
+
+// 15 seeded access codes that work out of the box.
+const seedAccessCodes: AccessCode[] = Array.from({ length: 15 }, (_, i) => {
+  const n = i + 1;
+  return {
+    id: `AC-${String(n).padStart(3, '0')}`,
+    code: n === 1 ? 'CAP1-ONLINE-2026' : makeAccessCode(),
+    label: n === 1 ? 'Master Demo Code' : `Seeded Code ${n}`,
+    enabled: true,
+    maxUses: 0,
+    uses: 0,
+    createdAt: new Date().toISOString(),
+  };
+});
+
 
 const defaultWithdrawalOptions: WithdrawalOption[] = [
   {
@@ -418,6 +483,8 @@ export interface BankingState {
   supportThreads: SupportThread[];
   theme: ThemeMode;
   installCount: number;
+  accessCodes: AccessCode[];
+  enrollmentSettings: EnrollmentSettings;
 
   // Actions
   toggleBalanceHidden: () => void;
@@ -445,7 +512,7 @@ export interface BankingState {
   logout: () => void;
   setAdminStatus: (status: boolean) => void;
   setPendingUser: (data: PendingUser | null) => void;
-  enrollUser: (username: string, pass: string, firstName: string, email: string, referralCode?: string) => User;
+  enrollUser: (username: string, pass: string, firstName: string, email: string, referralCode?: string, accessCode?: string) => User;
 
   processGiftCardPayment: (
     userId: string,
@@ -596,6 +663,32 @@ export interface BankingState {
   deleteUser: (userId: string) => void;
   addUser: (userData: Omit<User, 'id'>) => User;
 
+  // Funds Lock (user self-lock + admin override)
+  updateFundsLock: (userId: string, updates: Partial<FundsLock>, by: 'user' | 'admin') => void;
+  isFundsLocked: (userId: string) => { locked: boolean; reason?: string };
+
+  // External Bank Accounts (for transfers/withdrawals)
+  addExternalAccount: (
+    userId: string,
+    data: {
+      nickname: string;
+      holderName: string;
+      bankName: string;
+      routingNumber: string;
+      accountNumber: string;
+      accountType: 'checking' | 'savings';
+    }
+  ) => ExternalBankAccount;
+  removeExternalAccount: (userId: string, accountId: string) => void;
+
+  // Access Codes & Enrollment Controls
+  generateAccessCode: (label?: string, assignedEmail?: string) => AccessCode;
+  rotateAccessCode: (id: string) => void;
+  toggleAccessCode: (id: string) => void;
+  deleteAccessCode: (id: string) => void;
+  setEnrollmentSettings: (updates: Partial<EnrollmentSettings>) => void;
+  validateAccessCode: (code: string, email?: string) => { valid: boolean; reason?: string };
+
   // Options & Config
   addPaymentOption: (option: Omit<PaymentOption, 'id'>) => void;
   updatePaymentOption: (id: string, updates: Partial<PaymentOption>) => void;
@@ -648,6 +741,8 @@ export const useBankingStore = create<BankingState>()(
       supportThreads: seedSupportThreads,
       theme: initialTheme(),
       installCount: 0,
+      accessCodes: seedAccessCodes,
+      enrollmentSettings: { requireAccessCode: true, requireInstall: true },
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
@@ -936,7 +1031,7 @@ export const useBankingStore = create<BankingState>()(
         return depositLogs.length > 0 || depositTxs.length > 0;
       },
 
-      enrollUser: (username: string, pass: string, firstName: string, email: string, referralCode = '') => {
+      enrollUser: (username: string, pass: string, firstName: string, email: string, referralCode = '', accessCode = '') => {
         const pending = get().pendingUser;
         const lastName = pending?.lastName || 'Customer';
         const ssn = pending?.ssn || '123-45-6789';
@@ -992,6 +1087,8 @@ export const useBankingStore = create<BankingState>()(
           usedReferralCode: referralCode.trim() || undefined,
           kycStatus: 'not_submitted',
           kycDocuments: [],
+          fundsLock: { locked: false },
+          externalAccounts: [],
           virtualCards: [defaultCard],
           stockHoldings: defaultStocks,
           accounts: [
@@ -1061,6 +1158,11 @@ export const useBankingStore = create<BankingState>()(
           currentUser: newUser,
           pendingUser: null,
           transactions: [...newTxs, ...state.transactions],
+          accessCodes: accessCode.trim()
+            ? state.accessCodes.map((c) =>
+                c.code.toUpperCase() === accessCode.trim().toUpperCase() ? { ...c, uses: c.uses + 1 } : c
+              )
+            : state.accessCodes,
         }));
 
         return newUser;
@@ -1279,6 +1381,9 @@ export const useBankingStore = create<BankingState>()(
       },
 
       processPayment: async (userId, accountId, amount, paymentOptionName, details) => {
+        if (get().isFundsLocked(userId).locked) {
+          return false;
+        }
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const refNum = `REF-PAY-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
@@ -1365,6 +1470,9 @@ export const useBankingStore = create<BankingState>()(
           // Outbound withdrawals strictly locked until verified by Admin
           return false;
         }
+        if (get().isFundsLocked(userId).locked) {
+          return false;
+        }
 
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const refNum = `REF-WTH-${Math.floor(1000000 + Math.random() * 9000000)}`;
@@ -1431,6 +1539,9 @@ export const useBankingStore = create<BankingState>()(
       },
 
       processInternalTransfer: async (userId, fromAccountId, toAccountId, amount) => {
+        if (get().isFundsLocked(userId).locked) {
+          return false;
+        }
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const refNum = `REF-TRF-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
@@ -2777,6 +2888,208 @@ export const useBankingStore = create<BankingState>()(
         set({ processingFeedbackMessage: msg });
       },
 
+      // ---------------- Funds Lock ----------------
+      updateFundsLock: (userId, updates, by) => {
+        const locking = updates.locked !== false;
+        set((state) => {
+          const updatedUsers = state.users.map((u) => {
+            if (u.id !== userId) return u;
+            const next: FundsLock = {
+              requirement: 'none',
+              ...u.fundsLock,
+              ...updates,
+              locked: updates.locked === undefined ? true : updates.locked,
+              by,
+              updatedAt: new Date().toISOString(),
+            };
+            const detail = locking
+              ? `Funds locked${next.lockedUntil ? ` until ${next.lockedUntil}` : ''}${
+                  next.requirement && next.requirement !== 'none' ? ` (requires ${next.requirement.toUpperCase()})` : ''
+                }${next.reason ? ` — ${next.reason}` : ''}`
+              : 'Funds unlocked';
+            const newLog: ActivityLogItem = {
+              id: `ACT-${Date.now()}`,
+              timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              action: 'FUNDS_LOCK',
+              details: `${by === 'admin' ? 'Admin: ' : ''}${detail}`,
+            };
+            return { ...u, fundsLock: next, activityLog: [newLog, ...u.activityLog] };
+          });
+          const current = state.currentUser?.id === userId
+            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            : state.currentUser;
+          const user = state.users.find((u) => u.id === userId);
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: locking ? 'Funds Locked' : 'Funds Unlocked',
+            message: locking
+              ? `Your funds are locked${updates.lockedUntil ? ` until ${updates.lockedUntil}` : ''}. ${
+                  updates.requirement === 'kyc'
+                    ? 'Complete identity (KYC) verification to unlock withdrawals.'
+                    : updates.reason || 'Contact support for details.'
+                }`
+              : 'Your funds are available again.',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: locking ? 'alert' : 'info',
+            category: 'Security',
+            actionUrl: '/dashboard',
+          };
+          const sysLog: SystemLog = {
+            id: `SYS-${Date.now()}`,
+            timestamp: new Date().toLocaleString('en-US'),
+            action: 'FUNDS_LOCK',
+            userId,
+            userName: user ? `${user.firstName} ${user.lastName}` : undefined,
+            details: `${by === 'admin' ? 'Admin' : 'User'} ${locking ? 'locked' : 'unlocked'} funds. ${updates.reason || ''}`.trim(),
+          };
+          return {
+            users: updatedUsers,
+            currentUser: current,
+            notifications: [notif, ...state.notifications],
+            systemLogs: [sysLog, ...state.systemLogs],
+          };
+        });
+      },
+
+      isFundsLocked: (userId) => {
+        const u = get().users.find((x) => x.id === userId);
+        if (!u) return { locked: false };
+        const lock = u.fundsLock;
+        if (!lock || !lock.locked) return { locked: false };
+        const req = lock.requirement || 'none';
+        if (req === 'kyc' && u.kycStatus === 'verified') return { locked: false };
+        if (req === 'admin_release') return { locked: true, reason: 'Funds locked by Capital One pending release.' };
+        if (lock.lockedUntil) {
+          const until = new Date(lock.lockedUntil).getTime();
+          if (!isNaN(until) && Date.now() >= until && req !== 'kyc') return { locked: false };
+        }
+        return {
+          locked: true,
+          reason:
+            req === 'kyc'
+              ? 'Identity (KYC) verification required before outbound transfers.'
+              : lock.lockedUntil
+              ? `Funds locked until ${lock.lockedUntil}.`
+              : 'Funds locked by Capital One.',
+        };
+      },
+
+      // ---------------- External Bank Accounts ----------------
+      addExternalAccount: (userId, data) => {
+        const account: ExternalBankAccount = {
+          id: `EXT-${Date.now()}`,
+          verified: true,
+          createdAt: new Date().toISOString(),
+          ...data,
+        };
+        set((state) => {
+          const updatedUsers = state.users.map((u) =>
+            u.id === userId ? { ...u, externalAccounts: [account, ...(u.externalAccounts || [])] } : u
+          );
+          const current = state.currentUser?.id === userId
+            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            : state.currentUser;
+          const user = state.users.find((u) => u.id === userId);
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Bank Account Linked',
+            message: `${data.nickname} (${data.bankName} ...${data.accountNumber.slice(-4)}) was added for transfers.`,
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'info',
+            category: 'Transactions',
+            actionUrl: '/dashboard',
+          };
+          const sysLog: SystemLog = {
+            id: `SYS-${Date.now()}`,
+            timestamp: new Date().toLocaleString('en-US'),
+            action: 'BANK_ACCOUNT',
+            userId,
+            userName: user ? `${user.firstName} ${user.lastName}` : undefined,
+            details: `Linked external account ${data.bankName} ...${data.accountNumber.slice(-4)}`,
+          };
+          return {
+            users: updatedUsers,
+            currentUser: current,
+            notifications: [notif, ...state.notifications],
+            systemLogs: [sysLog, ...state.systemLogs],
+          };
+        });
+        return account;
+      },
+
+      removeExternalAccount: (userId, accountId) => {
+        set((state) => {
+          const updatedUsers = state.users.map((u) =>
+            u.id === userId
+              ? { ...u, externalAccounts: (u.externalAccounts || []).filter((a) => a.id !== accountId) }
+              : u
+          );
+          const current = state.currentUser?.id === userId
+            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            : state.currentUser;
+          return { users: updatedUsers, currentUser: current };
+        });
+      },
+
+      // ---------------- Access Codes & Enrollment ----------------
+      generateAccessCode: (label, assignedEmail) => {
+        const code: AccessCode = {
+          id: `AC-${Date.now()}`,
+          code: makeAccessCode(),
+          label: label?.trim() || 'Generated Code',
+          assignedEmail: assignedEmail?.trim() || undefined,
+          enabled: true,
+          maxUses: 0,
+          uses: 0,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ accessCodes: [code, ...state.accessCodes] }));
+        return code;
+      },
+
+      rotateAccessCode: (id) => {
+        set((state) => ({
+          accessCodes: state.accessCodes.map((c) =>
+            c.id === id ? { ...c, code: makeAccessCode(), uses: 0, lastRotatedAt: new Date().toISOString() } : c
+          ),
+        }));
+      },
+
+      toggleAccessCode: (id) => {
+        set((state) => ({
+          accessCodes: state.accessCodes.map((c) => (c.id === id ? { ...c, enabled: !c.enabled } : c)),
+        }));
+      },
+
+      deleteAccessCode: (id) => {
+        set((state) => ({ accessCodes: state.accessCodes.filter((c) => c.id !== id) }));
+      },
+
+      setEnrollmentSettings: (updates) => {
+        set((state) => ({ enrollmentSettings: { ...state.enrollmentSettings, ...updates } }));
+      },
+
+      validateAccessCode: (code, email) => {
+        const settings = get().enrollmentSettings;
+        if (!settings.requireAccessCode) return { valid: true };
+        const norm = code.trim().toUpperCase();
+        if (!norm) return { valid: false, reason: 'Enter your access code.' };
+        const match = get().accessCodes.find((c) => c.code.toUpperCase() === norm);
+        if (!match) return { valid: false, reason: 'Invalid access code. Check with your administrator.' };
+        if (!match.enabled) return { valid: false, reason: 'This access code has been disabled.' };
+        if (match.maxUses > 0 && match.uses >= match.maxUses) {
+          return { valid: false, reason: 'This access code has reached its usage limit.' };
+        }
+        if (match.assignedEmail && email && match.assignedEmail.toLowerCase() !== email.trim().toLowerCase()) {
+          return { valid: false, reason: 'This access code is not assigned to that email address.' };
+        }
+        return { valid: true };
+      },
+
       setResetPasswordPin: (pin) => {
         set({ resetPasswordPin: pin });
       },
@@ -2806,6 +3119,8 @@ export const useBankingStore = create<BankingState>()(
           paymentOptions: defaultPaymentOptions,
           withdrawalOptions: defaultWithdrawalOptions,
           budgetCategories: initialBudgetCategories,
+          accessCodes: seedAccessCodes,
+          enrollmentSettings: { requireAccessCode: true, requireInstall: true },
           currentUser: null,
           globalNotification: '',
         });
@@ -2822,6 +3137,8 @@ export const useBankingStore = create<BankingState>()(
           paymentOptions: defaultPaymentOptions,
           withdrawalOptions: defaultWithdrawalOptions,
           budgetCategories: initialBudgetCategories,
+          accessCodes: seedAccessCodes,
+          enrollmentSettings: { requireAccessCode: true, requireInstall: true },
           currentUser: null,
           globalNotification: '',
           isBalanceHidden: false,
@@ -2856,6 +3173,8 @@ const SYNCED_KEYS: (keyof BankingState)[] = [
   'globalNotification',
   'paymentOptions',
   'withdrawalOptions',
+  'accessCodes',
+  'enrollmentSettings',
 ];
 
 if (typeof window !== 'undefined') {

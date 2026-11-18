@@ -110,10 +110,19 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     setSupportThreadStatus,
     login,
     installCount,
+    accessCodes,
+    enrollmentSettings,
+    generateAccessCode,
+    rotateAccessCode,
+    toggleAccessCode,
+    deleteAccessCode,
+    setEnrollmentSettings,
+    updateFundsLock,
+    isFundsLocked,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
-    'users' | 'transactions' | 'kyc' | 'payment-settings' | 'notifications' | 'logs' | 'gift-cards' | 'support'
+    'users' | 'transactions' | 'kyc' | 'payment-settings' | 'access' | 'notifications' | 'logs' | 'gift-cards' | 'support'
   >('users');
 
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -124,6 +133,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [txSearch, setTxSearch] = useState('');
   const [toastNotice, setToastNotice] = useState<string | null>(null);
   const [selectedUserForCards, setSelectedUserForCards] = useState<User | null>(null);
+
+  // Access codes & fund-lock controls
+  const [newAccessLabel, setNewAccessLabel] = useState('');
+  const [newAccessEmail, setNewAccessEmail] = useState('');
+  const [lockTargetUser, setLockTargetUser] = useState<User | null>(null);
+  const [lockUntil, setLockUntil] = useState('');
+  const [lockRequirement, setLockRequirement] = useState<'none' | 'kyc' | 'admin_release'>('none');
+  const [lockReason, setLockReason] = useState('');
 
   // Gift card admin state
   const [giftRateDrafts, setGiftRateDrafts] = useState<Record<string, string>>({});
@@ -535,6 +552,25 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </span>
             </button>
 
+            {/* 4b. Access & Controls */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('access')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'access'
+                  ? 'bg-[#005C9D] text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <KeyRound className="w-4 h-4" />
+                <span>Access &amp; Controls</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                {accessCodes.length}
+              </span>
+            </button>
+
             {/* 5. System Notifications */}
             <button
               type="button"
@@ -703,6 +739,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {activeTab === 'transactions' && 'Global Ledger & Transaction Moderation'}
               {activeTab === 'kyc' && 'Identity Document Compliance Verification'}
               {activeTab === 'payment-settings' && 'Payment, Transfer & Disclaimer Settings'}
+              {activeTab === 'access' && 'Access Codes, Enrollment & Funds Lock Control'}
               {activeTab === 'notifications' && 'System Notifications Broadcast'}
               {activeTab === 'logs' && 'System Action Audit Log'}
               {activeTab === 'gift-cards' && 'Gift Card Conversion & Redemption Control'}
@@ -939,6 +976,32 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                       <span>Lock</span>
                                     </>
                                   )}
+                                </button>
+
+                                {/* Lock / Unlock Funds (until date + requirements) */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isFundsLocked(u.id).locked) {
+                                      updateFundsLock(u.id, { locked: false }, 'admin');
+                                      showToast(`Funds unlocked for ${u.firstName} ${u.lastName}.`);
+                                    } else {
+                                      setLockTargetUser(u);
+                                      setLockUntil('');
+                                      setLockRequirement('none');
+                                      setLockReason('');
+                                      setActiveTab('access');
+                                    }
+                                  }}
+                                  className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer ${
+                                    isFundsLocked(u.id).locked
+                                      ? 'bg-amber-900/60 text-amber-200'
+                                      : 'bg-slate-800 text-slate-200'
+                                  }`}
+                                  title={isFundsLocked(u.id).locked ? 'Unlock Funds' : 'Lock Funds until date/requirements'}
+                                >
+                                  <KeyRound className="w-3 h-3" />
+                                  <span>{isFundsLocked(u.id).locked ? 'Funds Locked' : 'Lock Funds'}</span>
                                 </button>
 
                                 {/* Reset Password to 0000 */}
@@ -1432,6 +1495,253 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB 4b: ACCESS CODES, ENROLLMENT & FUNDS LOCK
+            ======================================================== */}
+        {activeTab === 'access' && (
+          <div className="space-y-6 max-w-4xl">
+            {/* Enrollment controls */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#4FA3E3]" /> Enrollment Controls
+              </h3>
+              <div className="space-y-3">
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <span className="text-xs text-slate-300">Require an access code to create online access</span>
+                  <input
+                    type="checkbox"
+                    checked={enrollmentSettings.requireAccessCode}
+                    onChange={(e) => setEnrollmentSettings({ requireAccessCode: e.target.checked })}
+                    className="w-4 h-4 accent-[#005C9D]"
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <span className="text-xs text-slate-300">Require app installation before the app is shown</span>
+                  <input
+                    type="checkbox"
+                    checked={enrollmentSettings.requireInstall}
+                    onChange={(e) => setEnrollmentSettings({ requireInstall: e.target.checked })}
+                    className="w-4 h-4 accent-[#005C9D]"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Access code manager */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-[#4FA3E3]" /> Access Codes ({accessCodes.length})
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <input
+                  value={newAccessLabel}
+                  onChange={(e) => setNewAccessLabel(e.target.value)}
+                  placeholder="Label (e.g. VIP client)"
+                  className="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                />
+                <input
+                  value={newAccessEmail}
+                  onChange={(e) => setNewAccessEmail(e.target.value)}
+                  placeholder="Assign to email (optional)"
+                  className="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    generateAccessCode(newAccessLabel, newAccessEmail);
+                    setNewAccessLabel('');
+                    setNewAccessEmail('');
+                    setToastNotice('New access code generated.');
+                    setTimeout(() => setToastNotice(null), 2500);
+                  }}
+                  className="px-4 py-2 bg-[#005C9D] hover:bg-[#00487D] text-white text-xs font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Generate
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-slate-400 text-left border-b border-slate-800">
+                      <th className="py-2 pr-3">Code</th>
+                      <th className="py-2 pr-3">Label</th>
+                      <th className="py-2 pr-3">Assigned Email</th>
+                      <th className="py-2 pr-3">Uses</th>
+                      <th className="py-2 pr-3">Status</th>
+                      <th className="py-2 pr-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accessCodes.map((c) => (
+                      <tr key={c.id} className="border-b border-slate-800/60">
+                        <td className="py-2 pr-3 font-mono text-emerald-300">{c.code}</td>
+                        <td className="py-2 pr-3 text-slate-300">{c.label}</td>
+                        <td className="py-2 pr-3 text-slate-400">{c.assignedEmail || '—'}</td>
+                        <td className="py-2 pr-3 text-slate-400">
+                          {c.uses}
+                          {c.maxUses > 0 ? ` / ${c.maxUses}` : ''}
+                        </td>
+                        <td className="py-2 pr-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              c.enabled ? 'bg-emerald-900/50 text-emerald-300' : 'bg-red-900/50 text-red-300'
+                            }`}
+                          >
+                            {c.enabled ? 'Active' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-3">
+                          <div className="flex items-center justify-end gap-2.5">
+                            <button
+                              type="button"
+                              title="Copy"
+                              onClick={() => {
+                                navigator.clipboard?.writeText(c.code);
+                                setToastNotice(`Copied ${c.code}`);
+                                setTimeout(() => setToastNotice(null), 2000);
+                              }}
+                              className="text-slate-400 hover:text-white cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Rotate code"
+                              onClick={() => {
+                                rotateAccessCode(c.id);
+                                setToastNotice('Access code rotated.');
+                                setTimeout(() => setToastNotice(null), 2500);
+                              }}
+                              className="text-slate-400 hover:text-white cursor-pointer"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title={c.enabled ? 'Disable' : 'Enable'}
+                              onClick={() => toggleAccessCode(c.id)}
+                              className="text-slate-400 hover:text-white cursor-pointer"
+                            >
+                              {c.enabled ? <Ban className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete"
+                              onClick={() => deleteAccessCode(c.id)}
+                              className="text-slate-400 hover:text-red-400 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Funds lock overview */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#4FA3E3]" /> Funds Lock Overview
+              </h3>
+              <p className="text-xs text-slate-400 mb-3">
+                Lock a client's funds until a date and/or until requirements (e.g. KYC) are met. Lock/unlock from User
+                Management.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {users.filter((u) => isFundsLocked(u.id).locked).map((u) => (
+                  <span
+                    key={u.id}
+                    className="px-2.5 py-1 rounded-full bg-red-900/40 text-red-200 text-[11px] font-semibold flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3 h-3" /> {u.firstName} {u.lastName}
+                  </span>
+                ))}
+                {users.filter((u) => isFundsLocked(u.id).locked).length === 0 && (
+                  <span className="text-xs text-slate-500">No client funds are currently locked.</span>
+                )}
+              </div>
+            </div>
+
+            {/* Funds lock modal trigger hint */}
+            {lockTargetUser && (
+              <div className="bg-slate-900 border border-[#005C9D] rounded-xl p-5">
+                <h3 className="text-sm font-bold text-white mb-3">
+                  Lock Funds — {lockTargetUser.firstName} {lockTargetUser.lastName}
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Lock until (date, optional)</label>
+                    <input
+                      type="date"
+                      value={lockUntil}
+                      onChange={(e) => setLockUntil(e.target.value)}
+                      className="px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Requirement to unlock</label>
+                    <select
+                      value={lockRequirement}
+                      onChange={(e) => setLockRequirement(e.target.value as 'none' | 'kyc' | 'admin_release')}
+                      className="px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                    >
+                      <option value="none">None (auto-unlock when date passes)</option>
+                      <option value="kyc">KYC verification required</option>
+                      <option value="admin_release">Admin release required</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Reason / note (shown to client)</label>
+                    <input
+                      value={lockReason}
+                      onChange={(e) => setLockReason(e.target.value)}
+                      placeholder="e.g. Complete identity verification to unlock"
+                      className="w-full px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateFundsLock(
+                          lockTargetUser.id,
+                          {
+                            locked: true,
+                            lockedUntil: lockUntil || undefined,
+                            requirement: lockRequirement,
+                            reason: lockReason || undefined,
+                          },
+                          'admin'
+                        );
+                        setLockTargetUser(null);
+                        setLockUntil('');
+                        setLockReason('');
+                        setLockRequirement('none');
+                        setToastNotice('Client funds locked.');
+                        setTimeout(() => setToastNotice(null), 2500);
+                      }}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded cursor-pointer"
+                    >
+                      Lock Funds
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLockTargetUser(null)}
+                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
