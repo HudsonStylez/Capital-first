@@ -22,6 +22,7 @@ export const PWAInstallPrompt: React.FC = () => {
   const [ios, setIos] = useState(false);
   const [iosNonSafari, setIosNonSafari] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const recordAppInstall = useBankingStore((s) => s.recordAppInstall);
 
   const open = useCallback(() => setIsOpen(true), []);
@@ -32,11 +33,24 @@ export const PWAInstallPrompt: React.FC = () => {
     setIos(isIOS());
     setIosNonSafari(isIOSNonSafari());
 
+    const applyPrompt = (p: any) => {
+      setDeferredPrompt(p);
+      setCanInstall(true);
+    };
+
+    // Pick up a prompt captured before React mounted (see the inline script in index.html).
+    const early = (window as any).__deferredPwaPrompt;
+    if (early) applyPrompt(early);
+
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
-      setCanInstall(true);
+      (window as any).__deferredPwaPrompt = e;
       (window as any).__pwaInstallPrompt = e;
+      applyPrompt(e);
+    };
+    const handleAvailable = () => {
+      const p = (window as any).__deferredPwaPrompt;
+      if (p) applyPrompt(p);
     };
     const handleInstalled = () => {
       setInstalled(true);
@@ -49,6 +63,7 @@ export const PWAInstallPrompt: React.FC = () => {
       }
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('pwa-prompt-available', handleAvailable);
     window.addEventListener('appinstalled', handleInstalled);
     window.addEventListener(INSTALL_EVENT, open);
 
@@ -61,6 +76,7 @@ export const PWAInstallPrompt: React.FC = () => {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('pwa-prompt-available', handleAvailable);
       window.removeEventListener('appinstalled', handleInstalled);
       window.removeEventListener(INSTALL_EVENT, open);
       if (timer) clearTimeout(timer);
@@ -68,8 +84,9 @@ export const PWAInstallPrompt: React.FC = () => {
   }, [open]);
 
   const handleInstall = async () => {
-    const prompt = deferredPrompt || (window as any).__pwaInstallPrompt;
-    if (prompt) {
+    const prompt =
+      deferredPrompt || (window as any).__deferredPwaPrompt || (window as any).__pwaInstallPrompt;
+    if (prompt && typeof prompt.prompt === 'function') {
       prompt.prompt();
       const { outcome } = await prompt.userChoice;
       if (outcome === 'accepted') {
@@ -77,10 +94,12 @@ export const PWAInstallPrompt: React.FC = () => {
         setIsOpen(false);
       }
       setDeferredPrompt(null);
+      setCanInstall(false);
+      (window as any).__deferredPwaPrompt = null;
       (window as any).__pwaInstallPrompt = null;
     } else {
-      // No native prompt available — keep the sheet open with manual guidance
-      setCanInstall(false);
+      // No native prompt available — reveal manual guidance, keep the button.
+      setShowManual(true);
     }
   };
 
@@ -197,41 +216,35 @@ export const PWAInstallPrompt: React.FC = () => {
                 </button>
               </div>
             )
-          ) : canInstall || deferredPrompt ? (
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="flex-1 py-3 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
-              >
-                Maybe later
-              </button>
-              <button
-                type="button"
-                onClick={handleInstall}
-                className="flex-1 py-3 text-sm font-bold text-white bg-[#005C9D] hover:bg-[#00487D] rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Download className="w-4 h-4" /> Install
-              </button>
-            </div>
           ) : (
             <div className="mt-5 space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
-                  <MoreVertical className="w-4 h-4" />
+              {!canInstall && showManual && (
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="w-9 h-9 rounded-xl bg-[#005C9D] text-white flex items-center justify-center shrink-0">
+                    <MoreVertical className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs text-slate-700">
+                    If no install dialog appeared, open your browser menu and choose{' '}
+                    <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-700">
-                  Open your browser menu and choose <strong>Install app</strong> or{' '}
-                  <strong>Add to Home screen</strong>.
-                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="flex-1 py-3 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Maybe later
+                </button>
+                <button
+                  type="button"
+                  onClick={handleInstall}
+                  className="flex-1 py-3 text-sm font-bold text-white bg-[#005C9D] hover:bg-[#00487D] rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" /> Install
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors cursor-pointer"
-              >
-                Close
-              </button>
             </div>
           )}
 

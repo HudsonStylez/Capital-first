@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Capture the browser install prompt as early as possible so the Install
+         button always works, even if the event fires before React mounts. -->
+    <script>
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__deferredPwaPrompt = e;
+        window.dispatchEvent(new Event('pwa-prompt-available'));
+      });
+    </script>
     <title>Capital One Mobile & Web</title>
     <meta name="description" content="High-fidelity replica of the Capital One mobile and web experience featuring credit card rewards, banking tools, auto navigator, and credit monitoring." />
     <meta property="og:title" content="Capital One Mobile & Web" />
