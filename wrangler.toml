@@ -19,3 +19,14 @@ run_worker_first = false
 [vars]
 # Set these via `npx wrangler secret put` for production
 # PORT = "3001"
+
+# ---------------------------------------------------------------------------
+# Cloud sync (shared state across all devices/browsers).
+# 1) Create a KV namespace (free):
+#      npx wrangler kv namespace create BANKING_KV
+# 2) Uncomment the block below and paste the returned id.
+# Until then the app runs local-only (no cross-device sync).
+# ---------------------------------------------------------------------------
+# [[kv_namespaces]]
+# binding = "BANKING_KV"
+# id = "PASTE_YOUR_KV_NAMESPACE_ID_HERE"

@@ -1104,7 +1104,7 @@ export const useBankingStore = create<BankingState>()(
         const checkLast4 = Math.floor(1000 + Math.random() * 9000).toString();
 
         const hasReferral = referralCode.trim().length > 0;
-        const startingBalance = hasReferral ? 500.0 : 0.0;
+        const startingBalance = 0.0; // no funds are ever added on account creation
 
         const defaultCard: VirtualCard = {
           id: `VCARD-${Date.now()}`,
@@ -1178,42 +1178,21 @@ export const useBankingStore = create<BankingState>()(
               apr: '21.99%',
             },
           ],
-          activityLog: (hasReferral
-            ? [
-                {
-                  id: `ACT-${Date.now()}`,
-                  timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                  action: 'DEPOSIT' as const,
-                  details: `Opening bonus applied ($500.00) via referral promo code "${referralCode.trim()}"`,
-                  amount: 500.0,
-                },
-              ]
-            : [
-                {
-                  id: `ACT-${Date.now()}`,
-                  timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                  action: 'LOGIN' as const,
-                  details: 'Account successfully registered with Capital One 360 online access ($0.00 initial balance)',
-                },
-              ]) as ActivityLogItem[],
+          activityLog: [
+            {
+              id: `ACT-${Date.now()}`,
+              timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              action: 'LOGIN' as const,
+              details: hasReferral
+                ? `Account registered with referral code "${referralCode.trim()}" ($0.00 initial balance)`
+                : 'Account successfully registered with Capital One 360 online access ($0.00 initial balance)',
+            },
+          ] as ActivityLogItem[],
         };
 
+        // No funds are ever added on account creation (referral codes are tracked
+        // on the user record only, with no monetary bonus).
         const newTxs: Transaction[] = [];
-        if (hasReferral) {
-          newTxs.push({
-            id: `TX-${Math.floor(10000 + Math.random() * 90000)}`,
-            referenceNumber: `REF-CAP-${Math.floor(1000000 + Math.random() * 9000000)}`,
-            userId: newUser.id,
-            userName: `${newUser.firstName} ${newUser.lastName}`,
-            merchant: `Referral Opening Bonus (${referralCode.trim().toUpperCase()})`,
-            amount: 500.0,
-            type: 'Deposit',
-            status: 'Completed',
-            date: 'Today',
-            category: 'Referral Bonus',
-            destinationDetails: 'Capital One 360 Checking',
-          });
-        }
 
         set((state) => ({
           users: [...state.users, newUser],

@@ -14,7 +14,7 @@ import { buildReceiptHTML } from '../src/lib/receiptTemplate.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -199,6 +199,30 @@ export default {
       } catch (error) {
         return json({ error: 'Failed to send email', details: String(error?.message || error) }, 500);
       }
+    }
+
+    // --- Shared banking state (cloud sync across devices) ---
+    // Requires a KV namespace bound as BANKING_KV (see wrangler.toml).
+    if (url.pathname === '/api/state') {
+      if (!env.BANKING_KV) {
+        return json({ synced: false, error: 'Cloud sync not configured (BANKING_KV missing)' }, 503);
+      }
+      if (request.method === 'GET') {
+        const raw = await env.BANKING_KV.get('banking:state', 'json');
+        return json({ synced: true, updatedAt: raw?.updatedAt || 0, data: raw?.data || null });
+      }
+      if (request.method === 'PUT') {
+        try {
+          const body = await request.json();
+          const updatedAt = Date.now();
+          const payload = JSON.stringify({ updatedAt, data: body?.data ?? null });
+          await env.BANKING_KV.put('banking:state', payload);
+          return json({ synced: true, success: true, updatedAt });
+        } catch (error) {
+          return json({ synced: false, error: 'Failed to save state', details: String(error?.message || error) }, 500);
+        }
+      }
+      return json({ error: 'Method not allowed' }, 405);
     }
 
     // Serve static frontend assets (hardened with security headers)
