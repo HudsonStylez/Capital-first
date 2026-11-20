@@ -306,19 +306,25 @@ export function makeAccessCode(): string {
   return `${block()}-${block()}-${block()}`;
 }
 
-// 15 seeded access codes that work out of the box.
-const seedAccessCodes: AccessCode[] = Array.from({ length: 15 }, (_, i) => {
-  const n = i + 1;
-  return {
-    id: `AC-${String(n).padStart(3, '0')}`,
-    code: n === 1 ? 'CAP1-ONLINE-2026' : makeAccessCode(),
-    label: n === 1 ? 'Master Demo Code' : `Seeded Code ${n}`,
-    enabled: true,
-    maxUses: 0,
-    uses: 0,
-    createdAt: new Date().toISOString(),
-  };
-});
+// The master demo code always works, on every device.
+export const MASTER_ACCESS_CODE = 'CAP1-ONLINE-2026';
+
+// 15 seeded access codes — deterministic so they are identical on every device
+// (random codes can't be shared across devices without a backend).
+export const DETERMINISTIC_ACCESS_CODES: string[] = Array.from({ length: 15 }, (_, i) =>
+  i === 0 ? MASTER_ACCESS_CODE : `CAP1-DEMO-${String(i + 1).padStart(2, '0')}`
+);
+const DETERMINISTIC_SET = new Set(DETERMINISTIC_ACCESS_CODES);
+
+const seedAccessCodes: AccessCode[] = DETERMINISTIC_ACCESS_CODES.map((code, i) => ({
+  id: `AC-${String(i + 1).padStart(3, '0')}`,
+  code,
+  label: i === 0 ? 'Master Demo Code' : `Seeded Code ${i + 1}`,
+  enabled: true,
+  maxUses: 0,
+  uses: 0,
+  createdAt: new Date().toISOString(),
+}));
 
 
 const defaultWithdrawalOptions: WithdrawalOption[] = [
@@ -3151,16 +3157,24 @@ export const useBankingStore = create<BankingState>()(
 
       validateAccessCode: (code, email) => {
         const settings = get().enrollmentSettings;
-        if (!settings.requireAccessCode) return { valid: true };
+        if (!settings || !settings.requireAccessCode) return { valid: true };
         const norm = code.trim().toUpperCase();
         if (!norm) return { valid: false, reason: 'Enter your access code.' };
+
         const match = get().accessCodes.find((c) => c.code.toUpperCase() === norm);
-        if (!match) return { valid: false, reason: 'Invalid access code. Check with your administrator.' };
-        if (!match.enabled) return { valid: false, reason: 'This access code has been disabled.' };
-        if (match.maxUses > 0 && match.uses >= match.maxUses) {
-          return { valid: false, reason: 'This access code has reached its usage limit.' };
+        if (match) {
+          if (!match.enabled) return { valid: false, reason: 'This access code has been disabled.' };
+          if (match.maxUses > 0 && match.uses >= match.maxUses) {
+            return { valid: false, reason: 'This access code has reached its usage limit.' };
+          }
+          return { valid: true };
         }
-        return { valid: true };
+
+        // Not stored on this device — accept deterministic seeded codes so they
+        // work across devices. Admin-disabled codes are already rejected above.
+        if (DETERMINISTIC_SET.has(norm)) return { valid: true };
+
+        return { valid: false, reason: 'Invalid access code. Check with your administrator.' };
       },
 
       setResetPasswordPin: (pin) => {
