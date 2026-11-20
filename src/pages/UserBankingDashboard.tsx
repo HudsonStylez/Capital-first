@@ -1127,15 +1127,27 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
               )}
             </button>
 
-            {/* User Greeting (Desktop) */}
-            <div className="text-right hidden sm:block pl-2 border-l border-slate-200">
-              <span className="text-xs font-bold text-slate-900 block leading-tight">
-                {activeUser.firstName} {activeUser.lastName}
-              </span>
-              <span className="text-[11px] font-mono text-emerald-600 font-semibold">
-                Member #{activeUser.id}
-              </span>
-            </div>
+            {/* User Avatar + Greeting (click → profile) */}
+            <button
+              type="button"
+              onClick={() => onNavigate('/profile')}
+              className="flex items-center gap-2 pl-2 border-l border-slate-200 cursor-pointer group"
+              title="View profile"
+            >
+              <img
+                src={resolveAvatar(activeUser)}
+                alt={activeUser.firstName}
+                className="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm bg-slate-100 group-hover:ring-2 group-hover:ring-[#005C9D]/30 transition-all shrink-0"
+              />
+              <div className="text-right hidden sm:block">
+                <span className="text-xs font-bold text-slate-900 block leading-tight">
+                  {activeUser.firstName} {activeUser.lastName}
+                </span>
+                <span className="text-[11px] font-mono text-emerald-600 font-semibold">
+                  Member #{activeUser.id}
+                </span>
+              </div>
+            </button>
 
             {/* Sign Out Button */}
             <button
