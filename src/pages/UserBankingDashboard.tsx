@@ -65,6 +65,7 @@ import { ShareButton } from '../components/ShareButton';
 import { LiveActivityToast } from '../components/LiveActivityToast';
 import { formatTxDate, timeAgo } from '../lib/time';
 import { processImageFile } from '../lib/image';
+import { resolveAvatar } from '../lib/avatar';
 import { useNow } from '../hooks/useNow';
 
 interface UserBankingDashboardProps {
@@ -1251,16 +1252,23 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           <div className="space-y-6">
             {/* Welcome Banner */}
             <div className="bg-gradient-to-r from-[#001B3A] via-[#003865] to-[#005C9D] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <span className="text-xs uppercase tracking-widest text-sky-200 font-bold">
-                  WELCOME BACK
-                </span>
-                <h1 className="text-2xl sm:text-3xl font-extrabold mt-1 tracking-tight">
-                  Hello, {activeUser.firstName}
-                </h1>
-                <p className="text-xs sm:text-sm text-sky-100 mt-1">
-                  Live financial balances secured with Capital One 256-bit encryption.
-                </p>
+              <div className="flex items-center gap-4">
+                <img
+                  src={resolveAvatar(activeUser)}
+                  alt={activeUser.firstName}
+                  className="w-14 h-14 rounded-2xl object-cover border border-white/30 shadow-inner bg-white/10 shrink-0"
+                />
+                <div>
+                  <span className="text-xs uppercase tracking-widest text-sky-200 font-bold">
+                    WELCOME BACK
+                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold mt-1 tracking-tight">
+                    Hello, {activeUser.firstName}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-sky-100 mt-1">
+                    Live financial balances secured with Capital One 256-bit encryption.
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2.5">
