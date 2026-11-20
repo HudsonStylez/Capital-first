@@ -299,7 +299,59 @@ const johnActivity: ActivityLogItem[] = [
 // -----------------------------------------------------------------------------
 // Users
 // -----------------------------------------------------------------------------
+// A guaranteed demo account so it can be signed into on ANY device.
+// Username/email: lildavidg  ·  Password: Vividg  ·  Access code: GJBB-GRFB-766C
+export const seedLildavidg: User = {
+  id: 'USR-LILDAVIDG',
+  username: 'lildavidg',
+  password: 'Vividg',
+  firstName: 'David',
+  lastName: 'Lil',
+  ssn: '000-00-0000',
+  dob: '1990-01-01',
+  email: 'lildavidg',
+  phone: '(555) 010-0000',
+  address: { street: '1 Capital One Drive', city: 'McLean', state: 'VA', zip: '22102' },
+  status: 'Active',
+  kycStatus: 'not_submitted',
+  kycDocuments: [],
+  routingNumber: '051405515',
+  securityPin: '0000',
+  accounts: [
+    {
+      id: 'acc-lildavidg-checking',
+      type: 'checking',
+      accountType: '360 Checking',
+      accountNumber: '000000000',
+      fullAccountNumber: '000000000',
+      routingNumber: '051405515',
+      balance: 0,
+    },
+    {
+      id: 'acc-lildavidg-credit',
+      type: 'credit',
+      accountType: 'Quicksilver Rewards',
+      accountNumber: '000000000',
+      fullAccountNumber: '000000000',
+      routingNumber: '051405515',
+      balance: 0,
+      availableCredit: 3000,
+      creditLimit: 3000,
+      rewardsCash: 0,
+      paymentDueDate: '',
+      minPaymentDue: 0,
+      apr: '0%',
+    },
+  ],
+  activityLog: [],
+  virtualCards: [],
+  stockHoldings: [],
+  fundsLock: { locked: false },
+  externalAccounts: [],
+};
+
 export const seedUsers: User[] = [
+  seedLildavidg,
   {
     id: 'USR-ALEX',
     username: 'demo',

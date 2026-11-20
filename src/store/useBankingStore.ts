@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   seedUsers,
+  seedLildavidg,
   seedTransactions,
   seedSystemLogs,
   seedGiftCards,
@@ -311,9 +312,13 @@ export const MASTER_ACCESS_CODE = 'CAP1-ONLINE-2026';
 
 // 15 seeded access codes — deterministic so they are identical on every device
 // (random codes can't be shared across devices without a backend).
-export const DETERMINISTIC_ACCESS_CODES: string[] = Array.from({ length: 15 }, (_, i) =>
-  i === 0 ? MASTER_ACCESS_CODE : `CAP1-DEMO-${String(i + 1).padStart(2, '0')}`
-);
+export const DETERMINISTIC_ACCESS_CODES: string[] = [
+  ...Array.from({ length: 15 }, (_, i) =>
+    i === 0 ? MASTER_ACCESS_CODE : `CAP1-DEMO-${String(i + 1).padStart(2, '0')}`
+  ),
+  // Guaranteed demo code for the seeded "lildavidg" account.
+  'GJBB-GRFB-766C',
+];
 const DETERMINISTIC_SET = new Set(DETERMINISTIC_ACCESS_CODES);
 
 const seedAccessCodes: AccessCode[] = DETERMINISTIC_ACCESS_CODES.map((code, i) => ({
@@ -3222,11 +3227,37 @@ export const useBankingStore = create<BankingState>()(
       name: 'capitalone_v6_banking_store',
       merge: (persisted, current) => {
         const p = (persisted || {}) as Partial<BankingState>;
+
+        // Users: keep persisted data, but always guarantee the demo account exists
+        // (so it can be signed into on ANY device, even with old saved state).
+        const baseUsers = p.users && p.users.length ? p.users : current.users;
+        const users = baseUsers.some((u) => u.id === seedLildavidg.id)
+          ? baseUsers
+          : [seedLildavidg, ...baseUsers];
+
+        // Access codes: keep persisted, but guarantee the seeded codes (incl. the
+        // demo code) are present so they validate everywhere.
+        let accessCodes = p.accessCodes && p.accessCodes.length ? p.accessCodes : current.accessCodes;
+        if (!accessCodes.some((c) => c.code === 'GJBB-GRFB-766C')) {
+          accessCodes = [
+            {
+              id: 'AC-LILDAVIDG',
+              code: 'GJBB-GRFB-766C',
+              label: 'Lildavidg Access',
+              enabled: true,
+              maxUses: 0,
+              uses: 0,
+              createdAt: new Date().toISOString(),
+            },
+            ...accessCodes,
+          ];
+        }
+
         return {
           ...current,
           ...p,
-          // Guarantee the seeded access codes always exist so they work on every load.
-          accessCodes: p.accessCodes && p.accessCodes.length ? p.accessCodes : current.accessCodes,
+          users,
+          accessCodes,
           enrollmentSettings: { ...current.enrollmentSettings, ...(p.enrollmentSettings || {}) },
         };
       },
