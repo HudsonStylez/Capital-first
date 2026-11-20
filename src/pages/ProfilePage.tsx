@@ -34,19 +34,25 @@ import {
   MonitorSmartphone,
   LogIn,
   Download,
+  Camera,
+  Wallet,
 } from 'lucide-react';
 import { FaceIdVerificationModal } from '../components/FaceIdVerificationModal';
 import { timeAgo, formatDateTime } from '../lib/time';
 import { useNow } from '../hooks/useNow';
 import { showInstallPrompt } from '../lib/install';
+import { resolveAvatar } from '../lib/avatar';
+import { processImageFile } from '../lib/image';
 
 interface ProfilePageProps {
   onNavigate: (path: string) => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
-  const { currentUser, updateUserProfile, changePassword, logout, updateClientAccountNumbers, systemLogs } =
+  const { currentUser, updateUserProfile, changePassword, logout, updateClientAccountNumbers, systemLogs, updateUserAvatar } =
     useAdminStore();
+
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const now = useNow();
 
@@ -70,6 +76,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
       </div>
     );
   }
+
+  const avatarSrc = resolveAvatar(currentUser);
+  const checkingAccount = currentUser.accounts.find((a) => a.type === 'checking');
+  const savingsAccount = currentUser.accounts.find((a) => a.type === 'savings');
+  const totalFunds = currentUser.accounts.filter((a) => a.type !== 'credit').reduce((s, a) => s + a.balance, 0);
 
   // Profile Form State
   const [firstName, setFirstName] = useState(currentUser.firstName || '');
@@ -152,6 +163,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccessNotice, setPasswordSuccessNotice] = useState<string | null>(null);
+
+  const handleAvatarUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const processed = await processImageFile(file, { maxDim: 512, quality: 0.9 });
+      updateUserAvatar(currentUser.id, processed.dataUrl);
+      setProfileSuccessNotice('Profile photo updated.');
+      setTimeout(() => setProfileSuccessNotice(null), 3000);
+    } catch (err) {
+      setProfileSuccessNotice(err instanceof Error ? err.message : 'Could not update photo.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,9 +317,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6 my-2">
         {/* Profile Header Hero */}
         <div className="bg-gradient-to-r from-[#001B3A] via-[#003865] to-[#005C9D] rounded-2xl p-6 text-white shadow-md flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white text-2xl font-black shrink-0 shadow-inner">
-            {currentUser.firstName[0]}
-            {currentUser.lastName[0]}
+          <div className="relative shrink-0">
+            <img
+              src={avatarSrc}
+              alt={`${currentUser.firstName} ${currentUser.lastName}`}
+              className="w-16 h-16 rounded-2xl object-cover border border-white/30 shadow-inner bg-white/10"
+            />
+            <label
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white text-[#005C9D] flex items-center justify-center cursor-pointer shadow-md hover:scale-105 transition-transform"
+              title={currentUser.avatarUrl ? 'Change profile photo' : 'Upload profile photo'}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
+              />
+            </label>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              </div>
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -330,6 +376,51 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
             <p className="text-xs text-sky-100 mt-1">
               Member #{currentUser.id} &middot; SSN ending in {currentUser.ssn.slice(-4)}
             </p>
+          </div>
+        </div>
+
+        {/* Funds Summary */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-[#005C9D]" />
+              <h2 className="text-sm font-bold text-slate-900">My Funds</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('/dashboard')}
+              className="text-[11px] font-bold text-[#005C9D] hover:underline cursor-pointer"
+            >
+              Go to dashboard &rarr;
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Total Available</p>
+              <p className="text-xl font-extrabold text-slate-900 font-mono mt-0.5">
+                ${totalFunds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+            {checkingAccount && (
+              <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  360 Checking {checkingAccount.accountNumber}
+                </p>
+                <p className="text-xl font-extrabold text-slate-900 font-mono mt-0.5">
+                  ${checkingAccount.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            )}
+            {savingsAccount && (
+              <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  360 Savings {savingsAccount.accountNumber}
+                </p>
+                <p className="text-xl font-extrabold text-slate-900 font-mono mt-0.5">
+                  ${savingsAccount.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

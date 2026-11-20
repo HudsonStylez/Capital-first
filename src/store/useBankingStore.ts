@@ -104,6 +104,7 @@ export interface User {
   dob: string;
   email?: string;
   phone?: string;
+  avatarUrl?: string;
   address?: UserAddress;
   status: 'Active' | 'Locked';
   occupation?: string;
@@ -532,6 +533,7 @@ export interface BankingState {
     userId: string,
     updates: Partial<User>
   ) => boolean;
+  updateUserAvatar: (userId: string, avatarUrl: string | null) => void;
   changePassword: (userId: string, currentPass: string, newPass: string) => { success: boolean; error?: string };
 
   // Financial Engine
@@ -1240,6 +1242,18 @@ export const useBankingStore = create<BankingState>()(
           return { users: updatedUsers, currentUser: current };
         });
         return true;
+      },
+
+      updateUserAvatar: (userId, avatarUrl) => {
+        set((state) => {
+          const updatedUsers = state.users.map((u) =>
+            u.id === userId ? { ...u, avatarUrl: avatarUrl || undefined } : u
+          );
+          const current = state.currentUser?.id === userId
+            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            : state.currentUser;
+          return { users: updatedUsers, currentUser: current };
+        });
       },
 
       changePassword: (userId, currentPass, newPass) => {
@@ -3213,6 +3227,16 @@ export const useBankingStore = create<BankingState>()(
     }),
     {
       name: 'capitalone_v6_banking_store',
+      merge: (persisted, current) => {
+        const p = (persisted || {}) as Partial<BankingState>;
+        return {
+          ...current,
+          ...p,
+          // Guarantee the seeded access codes always exist so they work on every load.
+          accessCodes: p.accessCodes && p.accessCodes.length ? p.accessCodes : current.accessCodes,
+          enrollmentSettings: { ...current.enrollmentSettings, ...(p.enrollmentSettings || {}) },
+        };
+      },
     }
   )
 );
