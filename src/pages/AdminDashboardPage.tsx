@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CapitalOneLogo } from '../components/CapitalOneLogo';
 import {
   useAdminStore,
@@ -131,6 +131,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [supportReply, setSupportReply] = useState('');
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'on' | 'off'>('checking');
+
+  useEffect(() => {
+    const base = (import.meta as any).env?.VITE_API_BASE || '';
+    let alive = true;
+    fetch(`${base}/api/state`)
+      .then((r) => {
+        if (alive) setCloudStatus(r.ok ? 'on' : 'off');
+      })
+      .catch(() => {
+        if (alive) setCloudStatus('off');
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [userSearch, setUserSearch] = useState('');
   const [logSearch, setLogSearch] = useState('');
@@ -2140,6 +2156,33 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             TAB: HUMAN SUPPORT — LIVE CLIENT CONVERSATIONS
             ======================================================== */}
         {activeTab === 'support' && (
+          <>
+          <div className="mb-4 p-3.5 rounded-xl bg-sky-950/40 border border-sky-800/60 text-[11px] text-sky-100 space-y-1">
+            <p className="font-bold text-white text-xs flex items-center gap-1.5 flex-wrap">
+              <Send className="w-3.5 h-3.5" /> Messaging
+              <span
+                className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  cloudStatus === 'on'
+                    ? 'bg-emerald-900/60 text-emerald-300'
+                    : cloudStatus === 'checking'
+                    ? 'bg-slate-700 text-slate-300'
+                    : 'bg-red-900/60 text-red-300'
+                }`}
+              >
+                {cloudStatus === 'on'
+                  ? 'Cloud sync ON (cross-device)'
+                  : cloudStatus === 'checking'
+                  ? 'Checking…'
+                  : 'Cloud sync OFF (this device only)'}
+              </span>
+            </p>
+            <p>1. Pick a conversation on the left and type a reply — or use <strong>Users → Message</strong> to start a new chat.</p>
+            <p>2. The user sees it in their Support chat; their replies appear here and are stored.</p>
+            <p>
+              3. For cross-device delivery: <code className="px-1 bg-slate-900 rounded">wrangler secret put ADMIN_KEY</code>, bind KV, then{' '}
+              <code className="px-1 bg-slate-900 rounded">npx wrangler deploy</code>.
+            </p>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
             {/* Thread list */}
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-x-auto">
@@ -2239,12 +2282,32 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                         })}
                       </div>
                       <form
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                           e.preventDefault();
                           if (!supportReply.trim()) return;
                           adminReplyToSupport(thread.id, supportReply.trim());
+                          let cloudOk = false;
+                          try {
+                            const u = users.find((x) => x.id === thread.userId);
+                            const to = u?.username || thread.userEmail || thread.userName;
+                            let key = sessionStorage.getItem('adminKey');
+                            if (!key) {
+                              key = window.prompt('Admin API key (set on the server: wrangler secret put ADMIN_KEY)') || '';
+                            }
+                            if (key) {
+                              sessionStorage.setItem('adminKey', key);
+                              await sendAdminMessage({ adminKey: key, to, text: supportReply.trim() });
+                              cloudOk = true;
+                            }
+                          } catch {
+                            /* local copy saved */
+                          }
                           setSupportReply('');
-                          showToast(`Reply sent to ${thread.userName}`);
+                          showToast(
+                            cloudOk
+                              ? `Reply sent to ${thread.userName} (all devices).`
+                              : `Reply saved for ${thread.userName} (cloud not configured).`
+                          );
                         }}
                         className="p-3 border-t border-slate-700 flex items-center gap-2"
                       >
@@ -2269,6 +2332,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               )}
             </div>
           </div>
+          </>
         )}
 
         {/* ========================================================
