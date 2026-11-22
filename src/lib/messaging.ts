@@ -28,7 +28,6 @@ export function createMessaging(opts: {
   let lastSig = '';
   let timer: ReturnType<typeof setInterval> | null = null;
   let stopped = false;
-  let disabled = false;
 
   // Instant paint from last known state.
   try {
@@ -45,11 +44,6 @@ export function createMessaging(opts: {
         cache: 'no-store',
         headers: { 'cache-control': 'no-cache' },
       });
-      if (res.status === 503 || res.status === 404) {
-        // Backend (KV) not configured — stop polling until the next wake.
-        disabled = true;
-        return;
-      }
       if (!res.ok) return;
       const { messages, read } = await res.json();
       const sig =
@@ -70,7 +64,6 @@ export function createMessaging(opts: {
   }
 
   const onWake = () => {
-    disabled = false;
     fetchOnce();
   };
   const onVisible = () => {
@@ -81,7 +74,7 @@ export function createMessaging(opts: {
     start() {
       fetchOnce();
       timer = setInterval(() => {
-        if (!document.hidden && !disabled) fetchOnce();
+        if (!document.hidden) fetchOnce();
       }, POLL_MS);
       document.addEventListener('visibilitychange', onVisible);
       window.addEventListener('focus', onWake);

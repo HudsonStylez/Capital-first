@@ -134,6 +134,7 @@ export const SupportChat: React.FC = () => {
               <div className="text-center text-xs text-slate-500 mt-8 px-4">
                 <Headset className="w-8 h-8 mx-auto mb-2 text-[#005C9D]/60" />
                 You're chatting with a real Capital One specialist. Ask about transactions, gift cards, cards, or account security.
+                Your conversation is private and syncs across your devices.
               </div>
             )}
             {messages.map((m) => {

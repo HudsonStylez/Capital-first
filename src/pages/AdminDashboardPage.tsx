@@ -123,6 +123,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     updateAccessCode,
     updateFundsLock,
     isFundsLocked,
+    adminPasscode,
+    setAdminPasscode,
   } = useAdminStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -167,6 +169,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [msgTargetUser, setMsgTargetUser] = useState<User | null>(null);
   const [msgText, setMsgText] = useState('');
   const [msgSubject, setMsgSubject] = useState('');
+  const [newAdminPasscode, setNewAdminPasscode] = useState('');
 
   // Gift card admin state
   const [giftRateDrafts, setGiftRateDrafts] = useState<Record<string, string>>({});
@@ -1572,6 +1575,40 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             </div>
 
             {/* Access code manager */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#4FA3E3]" /> Admin Login Passcode
+              </h3>
+              <p className="text-[11px] text-slate-400 mb-3">
+                Current passcode: <span className="font-mono text-emerald-300">{adminPasscode}</span> — enter this to open
+                /admin.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newAdminPasscode}
+                  onChange={(e) => setNewAdminPasscode(e.target.value)}
+                  placeholder="New passcode (min 4 characters)"
+                  className="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newAdminPasscode.trim().length < 4) {
+                      showToast('Use at least 4 characters.');
+                      return;
+                    }
+                    setAdminPasscode(newAdminPasscode);
+                    showToast('Admin passcode updated.');
+                    setNewAdminPasscode('');
+                  }}
+                  className="px-4 py-2 bg-[#005C9D] hover:bg-[#00487D] text-white text-xs font-bold rounded cursor-pointer"
+                >
+                  Update Passcode
+                </button>
+              </div>
+            </div>
+
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-[#4FA3E3]" /> Access Codes ({accessCodes.length})

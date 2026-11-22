@@ -14,7 +14,7 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { setAdminStatus } = useAdminStore();
+  const { setAdminStatus, adminPasscode } = useAdminStore();
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
 
@@ -22,7 +22,7 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode.trim() === '123456') {
+    if (passcode.trim() === adminPasscode) {
       setError(false);
       setAdminStatus(true);
       onSuccess();
@@ -86,12 +86,6 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({
           >
             Authenticate &amp; Open /admin
           </button>
-
-          <div className="text-center pt-2">
-            <span className="text-[11px] text-slate-500">
-              Hint: Administrative testing passcode is <code className="text-sky-400 font-mono font-bold">123456</code>
-            </span>
-          </div>
         </form>
       </div>
     </div>

@@ -492,6 +492,7 @@ export interface BankingState {
   withdrawalDisclaimer: string;
   notifications: NotificationItem[];
   resetPasswordPin: string;
+  adminPasscode: string;
   isAdmin: boolean;
   currentUser: User | null;
   pendingUser: PendingUser | null;
@@ -725,6 +726,7 @@ export interface BankingState {
   setProcessingFeedbackMessage: (msg: string) => void;
 
   setResetPasswordPin: (pin: string) => void;
+  setAdminPasscode: (pin: string) => void;
   applyDefaultPasswordToAll: () => void;
   setGlobalNotification: (msg: string) => void;
   clearAllData: () => void;
@@ -758,6 +760,7 @@ export const useBankingStore = create<BankingState>()(
       withdrawalDisclaimer: 'Notice: External withdrawals and wire settlements are subject to federal ACH clearance, routine anti-fraud verification, and daily cutoff times (5:00 PM EST). Payments may fluctuate based on routing bank processing.',
       notifications: seedNotifications,
       resetPasswordPin: '0000',
+      adminPasscode: '123456',
       isAdmin: false,
       currentUser: null,
       pendingUser: null,
@@ -3246,6 +3249,11 @@ export const useBankingStore = create<BankingState>()(
         set({ resetPasswordPin: pin });
       },
 
+      setAdminPasscode: (pin) => {
+        const clean = pin.trim();
+        if (clean.length >= 4) set({ adminPasscode: clean });
+      },
+
       applyDefaultPasswordToAll: () => {
         set((state) => ({
           users: state.users.map((u) => ({ ...u, password: state.resetPasswordPin })),
@@ -3346,6 +3354,7 @@ export const useBankingStore = create<BankingState>()(
           users,
           accessCodes,
           notifications: notifications,
+          adminPasscode: p.adminPasscode || current.adminPasscode,
           enrollmentSettings: { ...current.enrollmentSettings, ...(p.enrollmentSettings || {}) },
         };
       },

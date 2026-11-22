@@ -21,15 +21,12 @@ run_worker_first = false
 # PORT = "3001"
 
 # ---------------------------------------------------------------------------
-# Cloud sync (shared state across all devices/browsers).
-# 1) Create a KV namespace (free):
-#      npx wrangler kv namespace create BANKING_KV
-# 2) Uncomment the block below and paste the returned id.
-# Until then the app runs local-only (no cross-device sync).
+# Cloud sync (shared state across all devices/browsers) via KV.
+# Created with: npx wrangler kv namespace create BANKING_KV
 # ---------------------------------------------------------------------------
-# [[kv_namespaces]]
-# binding = "BANKING_KV"
-# id = "PASTE_YOUR_KV_NAMESPACE_ID_HERE"
+[[kv_namespaces]]
+binding = "BANKING_KV"
+id = "66d6c31fcee74203ac478c3904d1cef1"
 
 # Cloudflare R2 bucket for uploaded images (cross-device image access).
 # 1) Create it (free):

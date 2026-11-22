@@ -37,11 +37,6 @@ export function pickShared(state: Partial<BankingState>): Record<string, unknown
 async function pull(): Promise<{ updatedAt: number; data: any } | null> {
   try {
     const res = await fetch(`${API_BASE}/api/state`, { method: 'GET' });
-    if (res.status === 503 || res.status === 404) {
-      // Backend (KV) not configured — run local-only until the next wake.
-      syncDisabled = true;
-      return null;
-    }
     if (!res.ok) return null;
     const j = await res.json();
     return j && j.synced ? { updatedAt: j.updatedAt || 0, data: j.data } : null;
@@ -51,7 +46,6 @@ async function pull(): Promise<{ updatedAt: number; data: any } | null> {
 }
 
 async function push(data: unknown): Promise<boolean> {
-  if (syncDisabled) return false;
   try {
     const res = await fetch(`${API_BASE}/api/state`, {
       method: 'PUT',
@@ -70,7 +64,6 @@ let lastPushed = '';
 let lastRemoteUpdatedAt = 0;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
-let syncDisabled = false;
 
 function applyRemote(data: any) {
   if (!data || typeof data !== 'object') return;
@@ -121,7 +114,6 @@ export function startCloudSync(): void {
   // Poll for admin updates from other devices.
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
-    if (syncDisabled) return;
     const remote = await pull();
     if (remote && remote.data && remote.updatedAt !== lastRemoteUpdatedAt) {
       lastRemoteUpdatedAt = remote.updatedAt;
@@ -134,7 +126,6 @@ export function startCloudSync(): void {
 /** Force an immediate pull (e.g., when the tab regains focus). */
 export function refreshFromCloud(): void {
   if (!started) return;
-  syncDisabled = false; // re-attempt (backend may have come back / KV bound)
   pull().then((remote) => {
     if (remote && remote.data && remote.updatedAt !== lastRemoteUpdatedAt) {
       lastRemoteUpdatedAt = remote.updatedAt;
