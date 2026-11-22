@@ -1122,11 +1122,15 @@ export const useBankingStore = create<BankingState>()(
 
       login: (username: string, pass: string) => {
         const trimmed = username.trim().toLowerCase();
+        // Match username/email AND password so duplicate usernames (e.g. a stale
+        // seeded account and the real one) never block the correct account.
         const found = get().users.find(
-          (u) => u.username.toLowerCase() === trimmed || (u.email || '').toLowerCase() === trimmed
+          (u) =>
+            (u.username.toLowerCase() === trimmed || (u.email || '').toLowerCase() === trimmed) &&
+            u.password === pass
         );
 
-        if (!found || found.password !== pass) {
+        if (!found) {
           return {
             success: false,
             error: "The username or password you entered doesn't match our records. Please try again or use Forgot Username or Password.",
