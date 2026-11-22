@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   seedUsers,
-  seedLildavidg,
   seedTransactions,
   seedSystemLogs,
   seedGiftCards,
@@ -3317,12 +3316,8 @@ export const useBankingStore = create<BankingState>()(
       merge: (persisted, current) => {
         const p = (persisted || {}) as Partial<BankingState>;
 
-        // Users: keep persisted data, but always guarantee the demo account exists
-        // (so it can be signed into on ANY device, even with old saved state).
-        const baseUsers = p.users && p.users.length ? p.users : current.users;
-        const users = baseUsers.some((u) => u.id === seedLildavidg.id)
-          ? baseUsers
-          : [seedLildavidg, ...baseUsers];
+        // Users: keep persisted data.
+        const users = p.users && p.users.length ? p.users : current.users;
 
         // Access codes: keep persisted, but guarantee the seeded codes (incl. the
         // demo code) are present so they validate everywhere.

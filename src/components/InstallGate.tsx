@@ -14,6 +14,7 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
   bypass = false,
 }) => {
   const requireInstall = useBankingStore((s) => s.enrollmentSettings?.requireInstall ?? true);
+  const isAdmin = useBankingStore((s) => s.isAdmin);
   const [installed, setInstalled] = useState<boolean>(() => isStandalone() || wasAppInstalled());
   const [justInstalled, setJustInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState<boolean>(
@@ -84,7 +85,7 @@ export const InstallGate: React.FC<{ children: React.ReactNode; bypass?: boolean
     );
   }
 
-  if (!requireInstall || bypass || installed) return <>{children}</>;
+  if (!requireInstall || bypass || installed || isAdmin) return <>{children}</>;
 
   const ios = isIOS();
   const iosNonSafari = isIOSNonSafari();

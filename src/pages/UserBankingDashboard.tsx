@@ -116,6 +116,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     isFundsLocked,
     addExternalAccount,
     removeExternalAccount,
+    isAdmin,
   } = useBankingStore();
 
   // Keep active user synced with state
@@ -5821,6 +5822,17 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           SUPPORT CHAT WIDGET (Floating bottom-left)
           ======================================================== */}
       <SupportChat />
+
+      {/* Admin impersonation: return to admin */}
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={() => onNavigate('/admin')}
+          className="fixed bottom-24 right-4 z-40 px-3 py-2 rounded-full bg-[#005C9D] hover:bg-[#00487D] text-white text-[11px] font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" /> Back to Admin
+        </button>
+      )}
 
       {/* Share the app (works inside the installed PWA / native wrapper too) */}
       <ShareButton variant="fab" />

@@ -13,6 +13,8 @@ import { sendReceiptEmail } from '../lib/receiptEmail';
 import { formatDateTime } from '../lib/time';
 import { HideTerm } from '../components/HideTerm';
 import { SmartImage } from '../components/SmartImage';
+import { MessageText } from '../components/MessageText';
+import { deleteImage } from '../lib/imageStore';
 import { sendAdminMessage } from '../lib/messaging';
 import {
   Users,
@@ -1048,6 +1050,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                   <span>Message</span>
                                 </button>
 
+                                {/* View client dashboard (admin impersonation) */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    useAdminStore.setState({ currentUser: u });
+                                    onNavigate('/dashboard');
+                                  }}
+                                  className="px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900 text-indigo-200 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                                  title="View this client's dashboard"
+                                >
+                                  <Home className="w-3 h-3" />
+                                  <span>View</span>
+                                </button>
+
                                 {/* Reset Password to 0000 */}
                                 <button
                                   type="button"
@@ -1362,6 +1378,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                               type="button"
                               onClick={() => {
                                 reviewKycDocument(user.id, doc.id, 'approved', 'Document verified successfully.');
+                                deleteImage(doc.imageKey);
                                 showToast(`Approved KYC for ${user.firstName} ${user.lastName}.`);
                               }}
                               className="px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 text-xs font-bold rounded cursor-pointer"
@@ -2288,15 +2305,32 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                           <h3 className="text-sm font-bold text-white">{thread.userName}</h3>
                           <p className="text-[11px] text-slate-400">{thread.userEmail || 'No email on file'} · {thread.subject}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSupportThreadStatus(thread.id, thread.status === 'open' ? 'resolved' : 'open')
-                          }
-                          className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-semibold rounded cursor-pointer"
-                        >
-                          {thread.status === 'open' ? 'Mark Resolved' : 'Reopen'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const keys = thread.messages
+                                .map((m) => /\[\[img:([^\]]+)\]\]/.exec(m.text)?.[1])
+                                .filter((k): k is string => !!k && !/^(https?:|data:)/.test(k));
+                              keys.forEach((k) => deleteImage(k));
+                              showToast(
+                                keys.length ? `Deleted ${keys.length} stored image(s).` : 'No stored images to delete.'
+                              );
+                            }}
+                            className="px-3 py-1.5 bg-red-900/60 hover:bg-red-900 text-red-200 text-[11px] font-semibold rounded cursor-pointer"
+                          >
+                            Delete images
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSupportThreadStatus(thread.id, thread.status === 'open' ? 'resolved' : 'open')
+                            }
+                            className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-semibold rounded cursor-pointer"
+                          >
+                            {thread.status === 'open' ? 'Mark Resolved' : 'Reopen'}
+                          </button>
+                        </div>
                       </div>
                       <div className="flex-1 overflow-y-auto p-4 space-y-3">
                         {thread.messages.map((m) => {
@@ -2311,7 +2345,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                 }`}
                               >
                                 <div className="text-[10px] font-bold mb-0.5 opacity-80">{m.senderName}</div>
-                                <p className="whitespace-pre-wrap">{m.text}</p>
+                                <div className="whitespace-pre-wrap">
+                                  <MessageText text={m.text} />
+                                </div>
                                 <div className="text-[9px] mt-1 opacity-60">{m.timestamp}</div>
                               </div>
                             </div>
@@ -2888,6 +2924,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 type="button"
                 onClick={() => {
                   reviewKycDocument(reviewingKycDoc.userId, reviewingKycDoc.doc.id, 'rejected', kycFeedbackInput);
+                  deleteImage(reviewingKycDoc.doc.imageKey);
                   showToast('KYC rejected with note sent to user.');
                   setReviewingKycDoc(null);
                 }}
@@ -3013,6 +3050,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                       'approved',
                       'Document inspected and verified by Admin.'
                     );
+                    deleteImage(inspectingKycDoc.doc.imageKey);
                     showToast(`Approved document ${inspectingKycDoc.doc.fileName}.`);
                     setInspectingKycDoc(null);
                   }}

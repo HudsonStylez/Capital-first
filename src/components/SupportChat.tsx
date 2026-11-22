@@ -1,13 +1,18 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useBankingStore } from '../store/useBankingStore';
-import { MessageCircle, X, Send, ShieldCheck, Headset } from 'lucide-react';
+import { MessageCircle, X, Send, ShieldCheck, Headset, Image as ImageIcon } from 'lucide-react';
 import { createMessaging } from '../lib/messaging';
 import type { CloudMessage, MessagingHandle } from '../lib/messaging';
+import { processImageFile } from '../lib/image';
+import { uploadImage } from '../lib/imageUpload';
+import { MessageText } from './MessageText';
 
 export const SupportChat: React.FC = () => {
   const { currentUser, users, supportThreads, sendSupportMessage, markSupportThreadRead } = useBankingStore();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [attachDataUrl, setAttachDataUrl] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [cloudMsgs, setCloudMsgs] = useState<CloudMessage[]>([]);
   const [cloudRead, setCloudRead] = useState<Record<string, number>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -80,11 +85,30 @@ export const SupportChat: React.FC = () => {
 
   if (!activeUser) return null;
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleAttach = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const p = await processImageFile(file, { maxDim: 1280, quality: 0.82 });
+      setAttachDataUrl(p.dataUrl);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    sendSupportMessage(activeUser.id, input, 'App Support');
+    if (!input.trim() && !attachDataUrl) return;
+    setSending(true);
+    let text = input.trim();
+    if (attachDataUrl) {
+      const up = await uploadImage(attachDataUrl);
+      const ref = up.url || up.key;
+      if (ref) text = `[[img:${ref}]]${text ? `\n${text}` : ''}`;
+      setAttachDataUrl(null);
+    }
+    if (text) sendSupportMessage(activeUser.id, text, 'App Support');
     setInput('');
+    setSending(false);
   };
 
   const cloudTime = (ts: number) =>
@@ -149,7 +173,7 @@ export const SupportChat: React.FC = () => {
                     }`}
                   >
                     {!isUser && <div className="text-[10px] font-bold text-[#005C9D] mb-0.5">{m.senderName}</div>}
-                    <p className="whitespace-pre-wrap">{m.text}</p>
+                    <div className="whitespace-pre-wrap"><MessageText text={m.text} /></div>
                     <div className={`text-[9px] mt-1 ${isUser ? 'text-white/70' : 'text-slate-400'}`}>{m.timestamp}</div>
                   </div>
                 </div>
@@ -159,7 +183,7 @@ export const SupportChat: React.FC = () => {
               <div key={m.id} className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl rounded-bl-sm px-3 py-2 text-xs leading-relaxed shadow-sm bg-white text-slate-800 border border-slate-200">
                   <div className="text-[10px] font-bold text-[#005C9D] mb-0.5">{m.from === 'admin' ? 'Capital One Support' : m.from}</div>
-                  <p className="whitespace-pre-wrap">{m.text}</p>
+                  <div className="whitespace-pre-wrap"><MessageText text={m.text} /></div>
                   <div className="text-[9px] mt-1 text-slate-400">{cloudTime(m.ts)}</div>
                 </div>
               </div>
@@ -173,8 +197,28 @@ export const SupportChat: React.FC = () => {
             )}
           </div>
 
+          {attachDataUrl && (
+            <div className="px-3 pt-2 flex items-center gap-2">
+              <img src={attachDataUrl} className="max-h-24 rounded-lg border border-slate-300" alt="preview" />
+              <button
+                type="button"
+                onClick={() => setAttachDataUrl(null)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                aria-label="Remove attachment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           {/* Input */}
           <form onSubmit={handleSend} className="p-3 border-t border-white/50 bg-white/70 flex items-center gap-2">
+            <label
+              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center cursor-pointer shrink-0"
+              title="Attach image"
+            >
+              <ImageIcon className="w-4 h-4 text-slate-600" />
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAttach(e.target.files?.[0])} />
+            </label>
             <input
               type="text"
               value={input}
@@ -184,7 +228,7 @@ export const SupportChat: React.FC = () => {
             />
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={sending || (!input.trim() && !attachDataUrl)}
               className="w-9 h-9 rounded-xl bg-[#005C9D] hover:bg-[#00487D] disabled:opacity-40 text-white flex items-center justify-center cursor-pointer shrink-0"
               aria-label="Send message"
             >
