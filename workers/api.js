@@ -201,6 +201,43 @@ export default {
       }
     }
 
+    // --- Image upload (R2) + serving ---
+    if (url.pathname === '/api/upload' && request.method === 'POST') {
+      if (!env.UPLOADS) {
+        return json({ synced: false, error: 'Image storage not configured (UPLOADS/R2 missing)' }, 503);
+      }
+      try {
+        const body = await request.json();
+        const dataUrl = body?.dataUrl;
+        if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+          return json({ error: 'Invalid image data' }, 400);
+        }
+        const comma = dataUrl.indexOf(',');
+        const meta = dataUrl.slice(0, comma);
+        const b64 = dataUrl.slice(comma + 1);
+        const mime = (/data:([^;]+)/.exec(meta)?.[1] || 'image/jpeg').trim();
+        const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+        const key = `img/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+        await env.UPLOADS.put(key, bytes, { httpMetadata: { contentType: mime } });
+        const imageUrl = new URL(`/api/image/${key}`, request.url).toString();
+        return json({ success: true, key, url: imageUrl });
+      } catch (error) {
+        return json({ error: 'Upload failed', details: String(error?.message || error) }, 500);
+      }
+    }
+
+    if (url.pathname.startsWith('/api/image/') && request.method === 'GET') {
+      if (!env.UPLOADS) return json({ error: 'Image storage not configured' }, 503);
+      const key = decodeURIComponent(url.pathname.slice('/api/image/'.length));
+      const obj = await env.UPLOADS.get(key);
+      if (!obj) return json({ error: 'Not found' }, 404);
+      const headers = new Headers(CORS);
+      obj.writeHttpMetadata(headers);
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      return new Response(obj.body, { headers });
+    }
+
     // --- Shared banking state (cloud sync across devices) ---
     // Requires a KV namespace bound as BANKING_KV (see wrangler.toml).
     if (url.pathname === '/api/state') {

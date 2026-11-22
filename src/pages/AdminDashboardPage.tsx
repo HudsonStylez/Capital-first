@@ -1981,10 +1981,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                               </button>
                             </div>
                           )}
-                          {(g.imageDataUrl || g.imageKey) && (
+                          {(g.imageDataUrl || g.imageKey || g.imageUrl) && (
                             <div className="mt-2">
                               <SmartImage
                                 dataUrl={g.imageDataUrl}
+                                imageUrl={g.imageUrl}
                                 imageKey={g.imageKey}
                                 alt={`Gift card ${g.cardName}`}
                                 className="max-h-56 w-auto rounded-lg border border-slate-600 bg-black/20"
@@ -2831,10 +2832,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </span>
               </div>
 
-              {(inspectingKycDoc.doc.imageDataUrl || inspectingKycDoc.doc.imageKey) && (
+              {(inspectingKycDoc.doc.imageDataUrl || inspectingKycDoc.doc.imageKey || inspectingKycDoc.doc.imageUrl) && (
                 <div className="rounded-xl overflow-hidden border border-slate-700 bg-black/40">
                   <SmartImage
                     dataUrl={inspectingKycDoc.doc.imageDataUrl}
+                    imageUrl={inspectingKycDoc.doc.imageUrl}
                     imageKey={inspectingKycDoc.doc.imageKey}
                     alt="Uploaded document"
                     className="w-full max-h-80 object-contain bg-black/20"

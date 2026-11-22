@@ -65,7 +65,7 @@ import { ShareButton } from '../components/ShareButton';
 import { LiveActivityToast } from '../components/LiveActivityToast';
 import { formatTxDate, timeAgo } from '../lib/time';
 import { processImageFile } from '../lib/image';
-import { saveImage } from '../lib/imageStore';
+import { uploadImage } from '../lib/imageUpload';
 import { resolveAvatar } from '../lib/avatar';
 import { useNow } from '../hooks/useNow';
 
@@ -567,13 +567,12 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       return;
     }
     setDepositError(null);
+    let imageUrl: string | undefined;
     let imageKey: string | undefined;
     if (giftImageDataUrl) {
-      try {
-        imageKey = await saveImage(giftImageDataUrl);
-      } catch {
-        /* ignore */
-      }
+      const up = await uploadImage(giftImageDataUrl);
+      imageUrl = up.url;
+      imageKey = up.key;
     }
     const result = submitGiftCard(
       activeUser.id,
@@ -586,7 +585,8 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       giftCardImageName,
       giftScratchCode.trim(),
       undefined,
-      imageKey
+      imageKey,
+      imageUrl
     );
     setGiftSubmitResult(result);
     showTopRightToast(`Gift card submitted to Admin for review. Ref #${result.reference}`);
@@ -855,11 +855,17 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
     let idKey: string | undefined;
     let utilKey: string | undefined;
-    try {
-      if (kycIdFrontImage) idKey = await saveImage(kycIdFrontImage);
-      if (kycUtilityImage) utilKey = await saveImage(kycUtilityImage);
-    } catch {
-      /* ignore */
+    let idUrl: string | undefined;
+    let utilUrl: string | undefined;
+    if (kycIdFrontImage) {
+      const up = await uploadImage(kycIdFrontImage);
+      idUrl = up.url;
+      idKey = up.key;
+    }
+    if (kycUtilityImage) {
+      const up = await uploadImage(kycUtilityImage);
+      utilUrl = up.url;
+      utilKey = up.key;
     }
 
     const doc1 = {
@@ -868,6 +874,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       idNumber: kycIdNumber.trim() || 'VA-DL-84920194',
       fileSize: kycIdFrontImage ? 'HD (uploaded)' : '3.4 MB',
       imageKey: idKey,
+      imageUrl: idUrl,
     };
 
     const doc2 = {
@@ -876,6 +883,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       utilityProvider: kycUtilityProvider.trim() || 'Dominion Energy Virginia',
       fileSize: kycUtilityImage ? 'HD (uploaded)' : '1.8 MB',
       imageKey: utilKey,
+      imageUrl: utilUrl,
     };
 
     setTimeout(() => {

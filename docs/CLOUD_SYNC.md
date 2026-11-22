@@ -4,27 +4,39 @@ By default the app persists to **localStorage** (per browser). To make accounts,
 access codes, and every admin update **shared across all devices/browsers**, the
 app syncs the shared state through the Cloudflare Worker + **KV** (free tier).
 
-## One-time setup (free, ~2 minutes)
+## One-time setup (free, ~3 minutes)
 
-1. **Create a KV namespace:**
+### A. Shared text/state (KV)
+1. Create a KV namespace:
    ```bash
    npx wrangler kv namespace create BANKING_KV
    ```
    Copy the returned `id`.
-
-2. **Bind it** — uncomment the block at the bottom of `wrangler.toml` and paste the id:
+2. Uncomment in `wrangler.toml` and paste it:
    ```toml
    [[kv_namespaces]]
    binding = "BANKING_KV"
-   id = "PASTE_YOUR_KV_NAMESPACE_ID_HERE"
+   id = "PASTE_ID"
    ```
 
-3. **Deploy:**
+### B. Shared images (R2)
+1. Create a bucket:
    ```bash
-   npx wrangler deploy
+   npx wrangler r2 bucket create capitalone-uploads
+   ```
+2. Uncomment in `wrangler.toml`:
+   ```toml
+   [[r2_buckets]]
+   binding = "UPLOADS"
+   bucket_name = "capitalone-uploads"
    ```
 
-That's it. Every device now reads/writes the same shared state.
+### C. Deploy
+```bash
+npx wrangler deploy
+```
+
+That's it. Every device now reads/writes the same shared state **and** images.
 
 ## What syncs vs. what stays local
 
@@ -58,6 +70,8 @@ npm run android:apk
 
 - Without KV bound, the app runs **local-only** (no cross-device sync) and logs a
   503 from `/api/state`; nothing breaks.
-- KV values max **25 MB**. State with many uploaded images can grow; for heavy
-  image volumes, move images to R2 (object storage) later.
+- Images are stored in **R2** (not KV), so KV stays small; `/api/image/<key>`
+  serves them back with the correct content-type.
+- Without KV bound, the app runs **local-only** (no cross-device sync); without R2
+  bound, images fall back to per-device IndexedDB.
 - This is last-write-wins for the shared blob — fine for one admin + a few clients.

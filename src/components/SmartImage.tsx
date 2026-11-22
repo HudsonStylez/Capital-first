@@ -7,17 +7,22 @@ import { getImage } from '../lib/imageStore';
  */
 export const SmartImage: React.FC<{
   dataUrl?: string;
+  imageUrl?: string;
   imageKey?: string;
   alt?: string;
   className?: string;
   downloadName?: string;
   fallback?: React.ReactNode;
-}> = ({ dataUrl, imageKey, alt, className, downloadName, fallback }) => {
-  const [src, setSrc] = useState<string | undefined>(dataUrl);
+}> = ({ dataUrl, imageUrl, imageKey, alt, className, downloadName, fallback }) => {
+  const [src, setSrc] = useState<string | undefined>(dataUrl || imageUrl);
 
   useEffect(() => {
     if (dataUrl) {
       setSrc(dataUrl);
+      return;
+    }
+    if (imageUrl) {
+      setSrc(imageUrl);
       return;
     }
     let alive = true;
@@ -30,7 +35,7 @@ export const SmartImage: React.FC<{
     return () => {
       alive = false;
     };
-  }, [dataUrl, imageKey]);
+  }, [dataUrl, imageUrl, imageKey]);
 
   if (!src) {
     return fallback !== undefined ? <>{fallback}</> : null;
