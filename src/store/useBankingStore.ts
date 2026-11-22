@@ -519,6 +519,7 @@ export interface BankingState {
   sendSupportMessage: (userId: string, text: string, subject?: string) => void;
   requestAccessSupport: (email: string, message: string, name?: string) => void;
   adminReplyToSupport: (threadId: string, text: string) => void;
+  adminMessageUser: (userId: string, text: string, subject?: string) => void;
   markSupportThreadRead: (threadId: string, viewer: 'user' | 'admin') => void;
   setSupportThreadStatus: (threadId: string, status: 'open' | 'resolved') => void;
   login: (username: string, password: string) => { success: boolean; error?: string; user?: User };
@@ -1008,14 +1009,76 @@ export const useBankingStore = create<BankingState>()(
             title: 'New Message from Capital One Support',
             message: text.trim().slice(0, 140),
             timestamp: 'Just now',
+            createdAt: now.toISOString(),
             unread: true,
             type: 'info',
             category: 'Security',
+            actionUrl: '/dashboard',
           };
           return {
             supportThreads: state.supportThreads.map((t) =>
               t.id === threadId ? { ...t, messages: [...t.messages, msg], updatedAt: now.toLocaleString() } : t
             ),
+            notifications: [notif, ...state.notifications],
+          };
+        });
+      },
+
+      adminMessageUser: (userId, text, subject) => {
+        if (!text.trim()) return;
+        const now = new Date();
+        const stamp = now.toLocaleString();
+        set((state) => {
+          const user = state.users.find((u) => u.id === userId);
+          const userName = user ? `${user.firstName} ${user.lastName}` : 'Customer';
+          const existing = state.supportThreads.find((t) => t.userId === userId && t.status === 'open');
+          const threadId = existing?.id || `SUP-${Date.now()}`;
+          const msg: SupportMessage = {
+            id: `msg-${Date.now()}`,
+            threadId,
+            sender: 'admin',
+            senderName: 'Capital One Support',
+            text: text.trim(),
+            timestamp: stamp,
+            read: false,
+          };
+
+          let supportThreads: SupportThread[];
+          if (existing) {
+            supportThreads = state.supportThreads.map((t) =>
+              t.id === existing.id
+                ? { ...t, messages: [...t.messages, msg], updatedAt: now.toISOString(), status: 'open' as const }
+                : t
+            );
+          } else {
+            const newThread: SupportThread = {
+              id: threadId,
+              userId,
+              userName,
+              userEmail: user?.email,
+              subject: subject?.trim() || 'Account Support',
+              status: 'open',
+              createdAt: now.toISOString(),
+              updatedAt: now.toISOString(),
+              messages: [msg],
+            };
+            supportThreads = [newThread, ...state.supportThreads];
+          }
+
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Message from Capital One Support',
+            message: text.trim().slice(0, 140),
+            timestamp: 'Just now',
+            createdAt: now.toISOString(),
+            unread: true,
+            type: 'info',
+            category: 'Verification',
+            actionUrl: '/dashboard',
+          };
+
+          return {
+            supportThreads,
             notifications: [notif, ...state.notifications],
           };
         });

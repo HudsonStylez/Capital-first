@@ -106,6 +106,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     resetDemoData,
     supportThreads,
     adminReplyToSupport,
+    adminMessageUser,
     markSupportThreadRead,
     setSupportThreadStatus,
     login,
@@ -143,6 +144,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [lockUntil, setLockUntil] = useState('');
   const [lockRequirement, setLockRequirement] = useState<'none' | 'kyc' | 'admin_release'>('none');
   const [lockReason, setLockReason] = useState('');
+
+  // Admin -> user support message
+  const [msgTargetUser, setMsgTargetUser] = useState<User | null>(null);
+  const [msgText, setMsgText] = useState('');
+  const [msgSubject, setMsgSubject] = useState('');
 
   // Gift card admin state
   const [giftRateDrafts, setGiftRateDrafts] = useState<Record<string, string>>({});
@@ -1004,6 +1010,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                 >
                                   <KeyRound className="w-3 h-3" />
                                   <span>{isFundsLocked(u.id).locked ? 'Funds Locked' : 'Lock Funds'}</span>
+                                </button>
+
+                                {/* Message user (admin-initiated support chat) */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMsgTargetUser(u);
+                                    setMsgSubject('');
+                                    setMsgText('');
+                                  }}
+                                  className="px-2 py-1 bg-sky-950/60 hover:bg-sky-900 text-sky-200 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                                  title="Send a support message"
+                                >
+                                  <Send className="w-3 h-3" />
+                                  <span>Message</span>
                                 </button>
 
                                 {/* Reset Password to 0000 */}
@@ -1984,7 +2005,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                             <img
                               src={g.imageDataUrl}
                               alt={`Gift card ${g.cardName}`}
-                              className="mt-2 w-28 h-20 object-cover rounded-lg border border-slate-600"
+                              className="mt-2 max-h-56 w-auto rounded-lg border border-slate-600 bg-black/20"
                             />
                           )}
 
@@ -3181,6 +3202,56 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg cursor-pointer"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin -> user message modal */}
+      {msgTargetUser && (
+        <div className="fixed inset-0 z-[95] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-5">
+            <h3 className="text-sm font-bold text-white mb-1">
+              Message {msgTargetUser.firstName} {msgTargetUser.lastName}
+            </h3>
+            <p className="text-[11px] text-slate-400 mb-3">
+              Sends a support chat message. The user gets a notification and can reply from Support on their dashboard.
+            </p>
+            <input
+              value={msgSubject}
+              onChange={(e) => setMsgSubject(e.target.value)}
+              placeholder="Subject (optional)"
+              className="w-full mb-2 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+            />
+            <textarea
+              value={msgText}
+              onChange={(e) => setMsgText(e.target.value)}
+              placeholder="Type your message…"
+              rows={4}
+              className="w-full px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => setMsgTargetUser(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!msgText.trim()}
+                onClick={() => {
+                  adminMessageUser(msgTargetUser.id, msgText, msgSubject);
+                  showToast(`Message sent to ${msgTargetUser.firstName} ${msgTargetUser.lastName}.`);
+                  setMsgTargetUser(null);
+                  setMsgText('');
+                  setMsgSubject('');
+                }}
+                className="px-4 py-2 bg-[#005C9D] hover:bg-[#00487D] disabled:opacity-50 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" /> Send
               </button>
             </div>
           </div>

@@ -587,7 +587,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     if (!file) return;
     setGiftCardImageName(file.name);
     try {
-      const processed = await processImageFile(file, { maxDim: 1600, quality: 0.9 });
+      const processed = await processImageFile(file, { maxDim: 1280, quality: 0.82 });
       setGiftImageDataUrl(processed.dataUrl);
       setDepositError(null);
     } catch (err) {
@@ -4445,7 +4445,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                           if (!f) return;
                           setKycIdFrontFile(f.name);
                           try {
-                            const img = await processImageFile(f, { maxDim: 1600, quality: 0.9 });
+                            const img = await processImageFile(f, { maxDim: 1280, quality: 0.82 });
                             setKycIdFrontImage(img.dataUrl);
                           } catch (err) {
                             showTopRightToast(err instanceof Error ? err.message : 'Could not read the image.');
@@ -4470,7 +4470,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                           if (!f) return;
                           setKycIdBackFile(f.name);
                           try {
-                            const img = await processImageFile(f, { maxDim: 1600, quality: 0.9 });
+                            const img = await processImageFile(f, { maxDim: 1280, quality: 0.82 });
                             setKycIdBackImage(img.dataUrl);
                           } catch (err) {
                             showTopRightToast(err instanceof Error ? err.message : 'Could not read the image.');
@@ -4554,7 +4554,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                         if (!f) return;
                         setKycUtilityFile(f.name);
                         try {
-                          const img = await processImageFile(f, { maxDim: 1600, quality: 0.9 });
+                          const img = await processImageFile(f, { maxDim: 1280, quality: 0.82 });
                           setKycUtilityImage(img.dataUrl);
                         } catch (err) {
                           showTopRightToast(err instanceof Error ? err.message : 'Could not read the image.');

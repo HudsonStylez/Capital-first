@@ -7,6 +7,7 @@ export const SupportChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevUnread = useRef(0);
 
   const activeUser = users.find((u) => u.id === currentUser?.id) || currentUser;
 
@@ -30,6 +31,14 @@ export const SupportChat: React.FC = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length, isOpen]);
+
+  // Auto-open the chat when the admin sends a new message.
+  useEffect(() => {
+    if (unreadFromAdmin > prevUnread.current) {
+      setIsOpen(true);
+    }
+    prevUnread.current = unreadFromAdmin;
+  }, [unreadFromAdmin]);
 
   if (!activeUser) return null;
 
