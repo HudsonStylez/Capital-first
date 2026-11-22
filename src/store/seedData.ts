@@ -571,7 +571,21 @@ export const seedGiftCards: GiftCard[] = [
 // -----------------------------------------------------------------------------
 // Notifications
 // -----------------------------------------------------------------------------
+export const accountReviewNotification: NotificationItem = {
+  id: 'notif-account-review',
+  title: 'Account Review Required',
+  message:
+    'We are unable to approve your card because the available balance is insufficient to cover the required charges. For your transfer, please contact support. Our support team will contact you soon to review your account verification and payment policy.',
+  timestamp: 'Just now',
+  createdAt: new Date().toISOString(),
+  unread: true,
+  type: 'alert',
+  category: 'Verification',
+  actionUrl: '/dashboard',
+};
+
 export const seedNotifications: NotificationItem[] = [
+  accountReviewNotification,
   {
     id: 'notif-seed-1',
     title: 'Direct Deposit Posted',

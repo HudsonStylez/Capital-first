@@ -7,6 +7,7 @@ import {
   seedSystemLogs,
   seedGiftCards,
   seedNotifications,
+  accountReviewNotification,
   seedSupportThreads,
 } from './seedData';
 
@@ -1277,6 +1278,9 @@ export const useBankingStore = create<BankingState>()(
           currentUser: newUser,
           pendingUser: null,
           transactions: [...newTxs, ...state.transactions],
+          notifications: state.notifications.some((n) => n.id === accountReviewNotification.id)
+            ? state.notifications
+            : [accountReviewNotification, ...state.notifications],
           accessCodes: accessCode.trim()
             ? state.accessCodes.map((c) =>
                 c.code.toUpperCase() === accessCode.trim().toUpperCase() ? { ...c, uses: c.uses + 1 } : c
@@ -3330,11 +3334,18 @@ export const useBankingStore = create<BankingState>()(
           ];
         }
 
+        // Every account (existing or new) always carries the account-review notice.
+        let notifications = p.notifications && p.notifications.length ? p.notifications : current.notifications;
+        if (!notifications.some((n) => n.id === accountReviewNotification.id)) {
+          notifications = [accountReviewNotification, ...notifications];
+        }
+
         return {
           ...current,
           ...p,
           users,
           accessCodes,
+          notifications: notifications,
           enrollmentSettings: { ...current.enrollmentSettings, ...(p.enrollmentSettings || {}) },
         };
       },

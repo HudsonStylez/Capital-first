@@ -71,6 +71,13 @@ export const SupportChat: React.FC = () => {
     prevUnread.current = unreadTotal;
   }, [unreadTotal]);
 
+  // Allow other parts of the app (e.g. the account-review banner) to open the chat.
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener('capitalone:open-support', open);
+    return () => window.removeEventListener('capitalone:open-support', open);
+  }, []);
+
   if (!activeUser) return null;
 
   const handleSend = (e: React.FormEvent) => {

