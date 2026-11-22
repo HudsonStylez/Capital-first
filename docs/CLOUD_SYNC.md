@@ -100,7 +100,11 @@ Endpoints: `GET /api/messages?userId=`, `POST /api/messages/read`,
 
 ## Packaged app (Capacitor APK)
 
-`capacitor.config.json` now sets `server.url` to the hosted site, so **every web
-deploy updates every installed app instantly** — you never rebuild the APK for a
-JS change. Trade-off: the shell needs network on cold start.
+By default the APK **bundles the built web app** — it works offline with **no
+backend at all** (admin/user on the same device share local state; images live in
+IndexedDB). To load the hosted site instead (instant web updates, needs network),
+add a `server.url` block to `capacitor.config.json` and run `npx cap sync android`.
+
+> Everything degrades gracefully without KV/R2: the client detects a 503 and
+> stops polling/pushing (no errors, no spam), then retries on focus/online.
 - This is last-write-wins for the shared blob — fine for one admin + a few clients.
