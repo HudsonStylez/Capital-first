@@ -65,6 +65,7 @@ import { ShareButton } from '../components/ShareButton';
 import { LiveActivityToast } from '../components/LiveActivityToast';
 import { formatTxDate, timeAgo } from '../lib/time';
 import { processImageFile } from '../lib/image';
+import { saveImage } from '../lib/imageStore';
 import { resolveAvatar } from '../lib/avatar';
 import { useNow } from '../hooks/useNow';
 
@@ -546,7 +547,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   // ----------------------------------------------------
   // GIFT CARD SUBMISSION (converts to USD after admin approval)
   // ----------------------------------------------------
-  const handleGiftCardSubmit = (e: React.FormEvent) => {
+  const handleGiftCardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const balance = parseFloat(giftCardBalance);
     if (!giftCardNumber.trim() || giftCardNumber.replace(/\D/g, '').length < 4) {
@@ -566,6 +567,14 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       return;
     }
     setDepositError(null);
+    let imageKey: string | undefined;
+    if (giftImageDataUrl) {
+      try {
+        imageKey = await saveImage(giftImageDataUrl);
+      } catch {
+        /* ignore */
+      }
+    }
     const result = submitGiftCard(
       activeUser.id,
       giftCardBrand,
@@ -576,7 +585,8 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       giftTargetDetails.trim() || undefined,
       giftCardImageName,
       giftScratchCode.trim(),
-      giftImageDataUrl
+      undefined,
+      imageKey
     );
     setGiftSubmitResult(result);
     showTopRightToast(`Gift card submitted to Admin for review. Ref #${result.reference}`);
@@ -839,16 +849,25 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     showTopRightToast('Document uploaded for Admin verification.');
   };
 
-  const handleUploadKycPackageSubmit = (e: React.FormEvent) => {
+  const handleUploadKycPackageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingKycPackage(true);
+
+    let idKey: string | undefined;
+    let utilKey: string | undefined;
+    try {
+      if (kycIdFrontImage) idKey = await saveImage(kycIdFrontImage);
+      if (kycUtilityImage) utilKey = await saveImage(kycUtilityImage);
+    } catch {
+      /* ignore */
+    }
 
     const doc1 = {
       docType: kycIdType,
       fileName: kycIdFrontFile.trim() || `${activeUser.lastName.toLowerCase()}_gov_photo_id.jpg`,
       idNumber: kycIdNumber.trim() || 'VA-DL-84920194',
       fileSize: kycIdFrontImage ? 'HD (uploaded)' : '3.4 MB',
-      imageDataUrl: kycIdFrontImage || undefined,
+      imageKey: idKey,
     };
 
     const doc2 = {
@@ -856,7 +875,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       fileName: kycUtilityFile.trim() || `${activeUser.lastName.toLowerCase()}_electric_utility_bill.pdf`,
       utilityProvider: kycUtilityProvider.trim() || 'Dominion Energy Virginia',
       fileSize: kycUtilityImage ? 'HD (uploaded)' : '1.8 MB',
-      imageDataUrl: kycUtilityImage || undefined,
+      imageKey: utilKey,
     };
 
     setTimeout(() => {

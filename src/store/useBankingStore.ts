@@ -70,6 +70,7 @@ export interface KycDocument {
   fileName: string;
   fileSize?: string;
   imageDataUrl?: string;
+  imageKey?: string;
   idNumber?: string;
   utilityProvider?: string;
   uploadedAt: string;
@@ -163,6 +164,7 @@ export interface GiftCard {
   targetDetails?: string;
   scratchCode?: string;
   imageDataUrl?: string;
+  imageKey?: string;
   imageName?: string;
   adminNote?: string;
   createdAt: string;
@@ -514,7 +516,8 @@ export interface BankingState {
     targetDetails?: string,
     imageName?: string,
     scratchCode?: string,
-    imageDataUrl?: string
+    imageDataUrl?: string,
+    imageKey?: string
   ) => { success: boolean; reference: string; etaHours: number };
   sendSupportMessage: (userId: string, text: string, subject?: string) => void;
   requestAccessSupport: (email: string, message: string, name?: string) => void;
@@ -603,7 +606,7 @@ export interface BankingState {
     userId: string,
     docType: 'driver_license' | 'passport' | 'utility_bill',
     fileName: string,
-    metadata?: { idNumber?: string; utilityProvider?: string; fileSize?: string; imageDataUrl?: string }
+    metadata?: { idNumber?: string; utilityProvider?: string; fileSize?: string; imageDataUrl?: string; imageKey?: string }
   ) => void;
   uploadKycPackage: (
     userId: string,
@@ -614,6 +617,7 @@ export interface BankingState {
       utilityProvider?: string;
       fileSize?: string;
       imageDataUrl?: string;
+      imageKey?: string;
     }>
   ) => void;
   reviewKycDocument: (
@@ -809,7 +813,7 @@ export const useBankingStore = create<BankingState>()(
         set({ theme });
       },
 
-      submitGiftCard: (userId, cardName, cardNumber, balance, purpose, targetAccountId, targetDetails, imageName, scratchCode, imageDataUrl) => {
+      submitGiftCard: (userId, cardName, cardNumber, balance, purpose, targetAccountId, targetDetails, imageName, scratchCode, imageDataUrl, imageKey) => {
         const reference = `REF-GIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
         const etaHours = 3;
         const now = new Date();
@@ -840,6 +844,7 @@ export const useBankingStore = create<BankingState>()(
             targetDetails,
             scratchCode: scratchCode?.trim() || undefined,
             imageDataUrl,
+            imageKey,
             imageName,
             adminNote: imageName ? `Card image: ${imageName}` : undefined,
             createdAt: now.toLocaleString(),
@@ -2008,6 +2013,7 @@ export const useBankingStore = create<BankingState>()(
           utilityProvider: metadata?.utilityProvider,
           fileSize: metadata?.fileSize || '2.4 MB',
           imageDataUrl: metadata?.imageDataUrl,
+          imageKey: metadata?.imageKey,
           uploadedAt: 'Just now',
           status: 'pending',
           reviewDeadline: deadline,
@@ -2088,6 +2094,7 @@ export const useBankingStore = create<BankingState>()(
           utilityProvider: d.utilityProvider,
           fileSize: d.fileSize || '3.1 MB',
           imageDataUrl: d.imageDataUrl,
+          imageKey: d.imageKey,
           uploadedAt: 'Just now',
           status: 'pending' as const,
           reviewDeadline: deadline,

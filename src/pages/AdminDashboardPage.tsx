@@ -12,6 +12,7 @@ import {
 import { sendReceiptEmail } from '../lib/receiptEmail';
 import { formatDateTime } from '../lib/time';
 import { HideTerm } from '../components/HideTerm';
+import { SmartImage } from '../components/SmartImage';
 import {
   Users,
   CreditCard,
@@ -1964,49 +1965,32 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                             {g.targetDetails ? ` · ${g.targetDetails}` : ''}
                           </p>
 
-                          {(g.scratchCode || g.imageDataUrl) && (
-                            <div className="flex flex-wrap items-center gap-2 mt-2">
-                              {g.scratchCode && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard?.writeText(g.scratchCode as string);
-                                    showToast('Scratch / PIN code copied.');
-                                  }}
-                                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900/70 text-amber-200 text-[10px] font-bold border border-amber-700/60 cursor-pointer"
-                                  title="Copy scratch code"
-                                >
-                                  <Copy className="w-3 h-3" />
-                                  <span className="font-mono">{g.scratchCode}</span>
-                                </button>
-                              )}
-                              {g.imageDataUrl && (
-                                <>
-                                  <a
-                                    href={g.imageDataUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center gap-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold cursor-pointer"
-                                  >
-                                    <ImageIcon className="w-3 h-3" /> View image
-                                  </a>
-                                  <a
-                                    href={g.imageDataUrl}
-                                    download={`giftcard-${g.cardName.replace(/\s+/g, '-')}-${g.last4}.jpg`}
-                                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#005C9D] hover:bg-[#00487D] text-white text-[10px] font-bold cursor-pointer"
-                                  >
-                                    <Download className="w-3 h-3" /> Download image
-                                  </a>
-                                </>
-                              )}
+                          {g.scratchCode && (
+                            <div className="mt-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(g.scratchCode as string);
+                                  showToast('Scratch / PIN code copied.');
+                                }}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900/70 text-amber-200 text-[10px] font-bold border border-amber-700/60 cursor-pointer"
+                                title="Copy scratch code"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span className="font-mono">{g.scratchCode}</span>
+                              </button>
                             </div>
                           )}
-                          {g.imageDataUrl && (
-                            <img
-                              src={g.imageDataUrl}
-                              alt={`Gift card ${g.cardName}`}
-                              className="mt-2 max-h-56 w-auto rounded-lg border border-slate-600 bg-black/20"
-                            />
+                          {(g.imageDataUrl || g.imageKey) && (
+                            <div className="mt-2">
+                              <SmartImage
+                                dataUrl={g.imageDataUrl}
+                                imageKey={g.imageKey}
+                                alt={`Gift card ${g.cardName}`}
+                                className="max-h-56 w-auto rounded-lg border border-slate-600 bg-black/20"
+                                downloadName={`giftcard-${g.cardName.replace(/\s+/g, '-')}-${g.last4}.jpg`}
+                              />
+                            </div>
                           )}
 
                           {g.adminNote && (
@@ -2847,22 +2831,17 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </span>
               </div>
 
-              {inspectingKycDoc.doc.imageDataUrl && (
+              {(inspectingKycDoc.doc.imageDataUrl || inspectingKycDoc.doc.imageKey) && (
                 <div className="rounded-xl overflow-hidden border border-slate-700 bg-black/40">
-                  <img
-                    src={inspectingKycDoc.doc.imageDataUrl}
+                  <SmartImage
+                    dataUrl={inspectingKycDoc.doc.imageDataUrl}
+                    imageKey={inspectingKycDoc.doc.imageKey}
                     alt="Uploaded document"
                     className="w-full max-h-80 object-contain bg-black/20"
+                    downloadName={inspectingKycDoc.doc.fileName || 'document.jpg'}
                   />
-                  <div className="flex items-center justify-between px-3 py-2 bg-slate-900">
+                  <div className="px-3 py-2 bg-slate-900">
                     <span className="text-[11px] text-slate-400">Customer-uploaded document</span>
-                    <a
-                      href={inspectingKycDoc.doc.imageDataUrl}
-                      download={inspectingKycDoc.doc.fileName || 'document.jpg'}
-                      className="text-[11px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Download
-                    </a>
                   </div>
                 </div>
               )}
