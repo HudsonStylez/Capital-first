@@ -111,6 +111,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     supportThreads,
     adminReplyToSupport,
     adminMessageUser,
+    editSupportMessage,
+    deleteSupportMessage,
     markSupportThreadRead,
     setSupportThreadStatus,
     login,
@@ -2349,6 +2351,29 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                   <MessageText text={m.text} />
                                 </div>
                                 <div className="text-[9px] mt-1 opacity-60">{m.timestamp}</div>
+                                {isAdmin && (
+                                  <div className="flex gap-2 mt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const t = window.prompt('Edit message', m.text);
+                                        if (t && t.trim()) editSupportMessage(thread.id, m.id, t);
+                                      }}
+                                      className="text-[10px] underline opacity-70 hover:opacity-100 cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (window.confirm('Delete this message?')) deleteSupportMessage(thread.id, m.id);
+                                      }}
+                                      className="text-[10px] underline opacity-70 hover:opacity-100 cursor-pointer"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );

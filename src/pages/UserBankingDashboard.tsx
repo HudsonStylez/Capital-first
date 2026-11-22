@@ -117,6 +117,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     addExternalAccount,
     removeExternalAccount,
     isAdmin,
+    updateUserAvatar,
   } = useBankingStore();
 
   // Keep active user synced with state
@@ -1242,6 +1243,67 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding checklist (prompt photo + incomplete tasks) */}
+      {(!activeUser.avatarUrl ||
+        activeUser.kycStatus !== 'verified' ||
+        (activeUser.externalAccounts || []).length === 0) && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#005C9D]" /> Finish setting up
+          </h3>
+          <div className="space-y-1.5">
+            {!activeUser.avatarUrl && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-600">Upload your profile photo</span>
+                <label className="px-3 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white text-[11px] font-bold rounded-lg cursor-pointer">
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const p = await processImageFile(f, { maxDim: 512, quality: 0.9 });
+                      const up = await uploadImage(p.dataUrl);
+                      updateUserAvatar(activeUser.id, up.url || p.dataUrl);
+                      showTopRightToast('Profile photo updated.');
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+            {activeUser.kycStatus !== 'verified' && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-600">Verify your identity (KYC)</span>
+                <button
+                  type="button"
+                  onClick={() => setIsKycModalOpen(true)}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg cursor-pointer"
+                >
+                  Start
+                </button>
+              </div>
+            )}
+            {(activeUser.externalAccounts || []).length === 0 && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-600">Link a bank account for transfers</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsWithdrawModalOpen(true);
+                    setShowAddAccountForm(true);
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

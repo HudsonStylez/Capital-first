@@ -527,6 +527,8 @@ export interface BankingState {
   requestAccessSupport: (email: string, message: string, name?: string) => void;
   adminReplyToSupport: (threadId: string, text: string) => void;
   adminMessageUser: (userId: string, text: string, subject?: string) => void;
+  editSupportMessage: (threadId: string, msgId: string, text: string) => void;
+  deleteSupportMessage: (threadId: string, msgId: string) => void;
   markSupportThreadRead: (threadId: string, viewer: 'user' | 'admin') => void;
   setSupportThreadStatus: (threadId: string, status: 'open' | 'resolved') => void;
   login: (username: string, password: string) => { success: boolean; error?: string; user?: User };
@@ -1095,6 +1097,29 @@ export const useBankingStore = create<BankingState>()(
             notifications: [notif, ...state.notifications],
           };
         });
+      },
+
+      editSupportMessage: (threadId, msgId, text) => {
+        if (!text.trim()) return;
+        set((state) => ({
+          supportThreads: state.supportThreads.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: t.messages.map((m) => (m.id === msgId ? { ...m, text: text.trim() } : m)),
+                  updatedAt: new Date().toISOString(),
+                }
+              : t
+          ),
+        }));
+      },
+
+      deleteSupportMessage: (threadId, msgId) => {
+        set((state) => ({
+          supportThreads: state.supportThreads.map((t) =>
+            t.id === threadId ? { ...t, messages: t.messages.filter((m) => m.id !== msgId) } : t
+          ),
+        }));
       },
 
       markSupportThreadRead: (threadId, viewer) => {

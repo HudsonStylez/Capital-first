@@ -97,18 +97,33 @@ export function startCloudSync(): void {
     lastPushed = JSON.stringify(pickShared(useBankingStore.getState()));
   });
 
-  // Push local shared changes (debounced).
+  // Push local shared changes (debounced + throttled to protect KV write limits).
+  let lastPushAt = 0;
+  let pendingPush: { shared: Record<string, unknown>; serialized: string } | null = null;
+
+  const flushPush = async () => {
+    if (!pendingPush) return;
+    const wait = 2500 - (Date.now() - lastPushAt);
+    if (wait > 0) {
+      if (pushTimer) clearTimeout(pushTimer);
+      pushTimer = setTimeout(flushPush, wait);
+      return;
+    }
+    const { shared, serialized } = pendingPush;
+    pendingPush = null;
+    lastPushAt = Date.now();
+    const ok = await push(shared).catch(() => false);
+    if (ok) lastPushed = serialized;
+  };
+
   useBankingStore.subscribe((state: BankingState) => {
     if (applyingRemote) return;
     const shared = pickShared(state);
     const serialized = JSON.stringify(shared);
-    if (serialized === lastPushed) return;
+    if (serialized === lastPushed && !pendingPush) return;
+    pendingPush = { shared, serialized };
     if (pushTimer) clearTimeout(pushTimer);
-    pushTimer = setTimeout(async () => {
-      const ok = await push(shared).catch(() => false);
-      // Only remember success; a failed push will retry on the next change/wake.
-      lastPushed = ok ? serialized : '';
-    }, 700);
+    pushTimer = setTimeout(flushPush, 700);
   });
 
   // Poll for admin updates from other devices.

@@ -67,6 +67,12 @@ export const EnrollPage: React.FC<EnrollPageProps> = ({ onNavigate, isSecurityCh
       return;
     }
 
+    const unameTaken = users.some((u) => u.username.toLowerCase() === newUsername.trim().toLowerCase());
+    if (unameTaken) {
+      setEnrollError('That username is already taken. Please choose another.');
+      return;
+    }
+
     // Validate the admin-issued access code (priority gate on join).
     const check = validateAccessCode(accessCode, email);
     if (!check.valid) {
