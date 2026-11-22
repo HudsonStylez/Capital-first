@@ -4,6 +4,10 @@
   "appVersion": "1.0.0",
   "webDir": "dist",
   "bundledWebRuntime": false,
+  "server": {
+    "url": "https://capitalone.hudson-ofccl.workers.dev",
+    "cleartext": false
+  },
   "plugins": {
     "SplashScreen": {
       "launchShowAfter": 0,

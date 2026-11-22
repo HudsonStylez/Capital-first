@@ -143,12 +143,120 @@ function extractEmail(from) {
   return m ? m[1] : from;
 }
 
+// ===== messaging (dedicated KV keys; never touched by the state writer) =====
+function mjson(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'no-store, no-cache, must-revalidate',
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': 'content-type, x-admin-key',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+    },
+  });
+}
+
+async function getMessages(url, env) {
+  const userId = (url.searchParams.get('userId') || '').trim();
+  if (!userId) return mjson({ error: 'userId required' }, 400);
+
+  const [mineRaw, allRaw, readRaw] = await Promise.all([
+    env.BANKING_KV.get(`msgs:${userId}`),
+    env.BANKING_KV.get('msgs:__all__'),
+    env.BANKING_KV.get(`read:${userId}`),
+  ]);
+  const mine = mineRaw ? JSON.parse(mineRaw) : [];
+  const all = allRaw ? JSON.parse(allRaw) : [];
+  const read = readRaw ? JSON.parse(readRaw) : {};
+
+  const messages = [...all, ...mine].sort((a, b) => a.ts - b.ts);
+  return mjson({ messages, read });
+}
+
+async function appendMessage(env, key, msg) {
+  for (let i = 0; i < 3; i++) {
+    const raw = await env.BANKING_KV.get(key);
+    const list = raw ? JSON.parse(raw) : [];
+    if (list.some((m) => m.id === msg.id)) return list; // idempotent retry
+    list.push(msg);
+    await env.BANKING_KV.put(key, JSON.stringify(list.slice(-200)));
+    const check = await env.BANKING_KV.get(key);
+    if (check && JSON.parse(check).some((m) => m.id === msg.id)) return JSON.parse(check);
+    await new Promise((r) => setTimeout(r, 60 * (i + 1)));
+  }
+  return null;
+}
+
+async function postAdminMessage(request, env) {
+  const key = request.headers.get('x-admin-key') || '';
+  if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return mjson({ error: 'unauthorized' }, 401);
+
+  const body = await request.json().catch(() => null);
+  const to = (body?.to || '').trim(); // username, or "__all__" for broadcast
+  const text = (body?.text || '').trim();
+  if (!to || !text) return mjson({ error: 'to and text required' }, 400);
+  if (text.length > 4000) return mjson({ error: 'too long' }, 413);
+
+  const msg = {
+    id: body.id || crypto.randomUUID(), // client-supplied id => safe retries
+    to,
+    from: body.from || 'admin',
+    text,
+    ts: Date.now(),
+  };
+
+  const saved = await appendMessage(env, `msgs:${to}`, msg);
+  if (!saved) return mjson({ error: 'write not confirmed, retry with same id' }, 502);
+  return mjson({ ok: true, message: msg });
+}
+
+async function postRead(request, env) {
+  const body = await request.json().catch(() => null);
+  const userId = (body?.userId || '').trim();
+  const ids = Array.isArray(body?.ids) ? body.ids : [];
+  if (!userId) return mjson({ error: 'userId required' }, 400);
+
+  const k = `read:${userId}`;
+  const raw = await env.BANKING_KV.get(k);
+  const read = raw ? JSON.parse(raw) : {};
+  let changed = false;
+  for (const id of ids) {
+    if (!read[id]) {
+      read[id] = Date.now();
+      changed = true;
+    }
+  }
+  if (changed) {
+    const entries = Object.entries(read)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 500);
+    await env.BANKING_KV.put(k, JSON.stringify(Object.fromEntries(entries)));
+  }
+  return mjson({ ok: true, read });
+}
+// ===== end messaging =====
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (request.method === 'OPTIONS') {
       return harden(new Response(null, { headers: CORS }));
+    }
+
+    // --- messaging routes (dedicated KV keys; never the state blob) ---
+    if (url.pathname === '/api/messages' && request.method === 'GET') {
+      if (!env.BANKING_KV) return mjson({ error: 'KV not configured' }, 503);
+      return getMessages(url, env);
+    }
+    if (url.pathname === '/api/messages/read' && request.method === 'POST') {
+      if (!env.BANKING_KV) return mjson({ error: 'KV not configured' }, 503);
+      return postRead(request, env);
+    }
+    if (url.pathname === '/api/admin/message' && request.method === 'POST') {
+      if (!env.BANKING_KV) return mjson({ error: 'KV not configured' }, 503);
+      return postAdminMessage(request, env);
     }
 
     if (request.method === 'GET' && url.pathname === '/health') {

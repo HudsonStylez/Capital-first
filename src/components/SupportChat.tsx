@@ -1,12 +1,17 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useBankingStore } from '../store/useBankingStore';
 import { MessageCircle, X, Send, ShieldCheck, Headset } from 'lucide-react';
+import { createMessaging } from '../lib/messaging';
+import type { CloudMessage, MessagingHandle } from '../lib/messaging';
 
 export const SupportChat: React.FC = () => {
   const { currentUser, users, supportThreads, sendSupportMessage, markSupportThreadRead } = useBankingStore();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [cloudMsgs, setCloudMsgs] = useState<CloudMessage[]>([]);
+  const [cloudRead, setCloudRead] = useState<Record<string, number>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const msgRef = useRef<MessagingHandle | null>(null);
   const prevUnread = useRef(0);
 
   const activeUser = users.find((u) => u.id === currentUser?.id) || currentUser;
@@ -18,27 +23,53 @@ export const SupportChat: React.FC = () => {
   }, [supportThreads, activeUser]);
 
   const messages = thread?.messages || [];
+  const localIds = new Set(messages.map((m) => m.id));
+  const cloudOnly = cloudMsgs.filter((m) => !localIds.has(m.id));
   const unreadFromAdmin = messages.filter((m) => m.sender === 'admin' && !m.read).length;
+  const unreadCloud = cloudMsgs.filter((m) => !cloudRead[m.id]).length;
+  const unreadTotal = unreadFromAdmin + unreadCloud;
+
+  // Cloud polling (cross-device admin messages)
+  useEffect(() => {
+    if (!activeUser?.username) return;
+    const h = createMessaging({
+      userId: activeUser.username,
+      onMessages: (list, meta) => {
+        setCloudMsgs(list);
+        if (meta.read) setCloudRead(meta.read);
+      },
+    });
+    msgRef.current = h;
+    h.start();
+    return () => {
+      h.stop();
+      msgRef.current = null;
+    };
+  }, [activeUser?.username]);
 
   useEffect(() => {
     if (isOpen && thread) {
       markSupportThreadRead(thread.id, 'user');
     }
-  }, [isOpen, thread?.id]);
+    if (isOpen) {
+      const unreadIds = cloudMsgs.filter((m) => !cloudRead[m.id]).map((m) => m.id);
+      if (unreadIds.length && msgRef.current) msgRef.current.markRead(unreadIds);
+    }
+  }, [isOpen, thread?.id, cloudMsgs.length]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages.length, isOpen]);
+  }, [messages.length, cloudMsgs.length, isOpen]);
 
-  // Auto-open the chat when the admin sends a new message.
+  // Auto-open the chat when a new admin/cloud message arrives.
   useEffect(() => {
-    if (unreadFromAdmin > prevUnread.current) {
+    if (unreadTotal > prevUnread.current) {
       setIsOpen(true);
     }
-    prevUnread.current = unreadFromAdmin;
-  }, [unreadFromAdmin]);
+    prevUnread.current = unreadTotal;
+  }, [unreadTotal]);
 
   if (!activeUser) return null;
 
@@ -48,6 +79,9 @@ export const SupportChat: React.FC = () => {
     sendSupportMessage(activeUser.id, input, 'App Support');
     setInput('');
   };
+
+  const cloudTime = (ts: number) =>
+    new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <>
@@ -59,9 +93,9 @@ export const SupportChat: React.FC = () => {
         aria-label="Open support chat"
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
-        {!isOpen && unreadFromAdmin > 0 && (
+        {!isOpen && unreadTotal > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#DA291C] text-white text-[10px] font-bold flex items-center justify-center">
-            {unreadFromAdmin}
+            {unreadTotal}
           </span>
         )}
       </button>
@@ -89,7 +123,7 @@ export const SupportChat: React.FC = () => {
 
           {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-white/40">
-            {messages.length === 0 && (
+            {messages.length === 0 && cloudOnly.length === 0 && (
               <div className="text-center text-xs text-slate-500 mt-8 px-4">
                 <Headset className="w-8 h-8 mx-auto mb-2 text-[#005C9D]/60" />
                 You're chatting with a real Capital One specialist. Ask about transactions, gift cards, cards, or account security.
@@ -99,11 +133,13 @@ export const SupportChat: React.FC = () => {
               const isUser = m.sender === 'user';
               return (
                 <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
-                    isUser
-                      ? 'bg-[#005C9D] text-white rounded-br-sm'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm'
-                  }`}>
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
+                      isUser
+                        ? 'bg-[#005C9D] text-white rounded-br-sm'
+                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm'
+                    }`}
+                  >
                     {!isUser && <div className="text-[10px] font-bold text-[#005C9D] mb-0.5">{m.senderName}</div>}
                     <p className="whitespace-pre-wrap">{m.text}</p>
                     <div className={`text-[9px] mt-1 ${isUser ? 'text-white/70' : 'text-slate-400'}`}>{m.timestamp}</div>
@@ -111,7 +147,16 @@ export const SupportChat: React.FC = () => {
                 </div>
               );
             })}
-            {messages.length > 0 && messages[messages.length - 1].sender === 'user' && (
+            {cloudOnly.map((m) => (
+              <div key={m.id} className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl rounded-bl-sm px-3 py-2 text-xs leading-relaxed shadow-sm bg-white text-slate-800 border border-slate-200">
+                  <div className="text-[10px] font-bold text-[#005C9D] mb-0.5">{m.from === 'admin' ? 'Capital One Support' : m.from}</div>
+                  <p className="whitespace-pre-wrap">{m.text}</p>
+                  <div className="text-[9px] mt-1 text-slate-400">{cloudTime(m.ts)}</div>
+                </div>
+              </div>
+            ))}
+            {messages.length > 0 && messages[messages.length - 1].sender === 'user' && cloudOnly.length === 0 && (
               <div className="flex justify-start">
                 <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-3 py-2 text-[11px] text-slate-500 italic">
                   Support is reviewing your message…

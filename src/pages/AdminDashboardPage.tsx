@@ -13,6 +13,7 @@ import { sendReceiptEmail } from '../lib/receiptEmail';
 import { formatDateTime } from '../lib/time';
 import { HideTerm } from '../components/HideTerm';
 import { SmartImage } from '../components/SmartImage';
+import { sendAdminMessage } from '../lib/messaging';
 import {
   Users,
   CreditCard,
@@ -3223,9 +3224,27 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               <button
                 type="button"
                 disabled={!msgText.trim()}
-                onClick={() => {
+                onClick={async () => {
                   adminMessageUser(msgTargetUser.id, msgText, msgSubject);
-                  showToast(`Message sent to ${msgTargetUser.firstName} ${msgTargetUser.lastName}.`);
+                  let cloudOk = false;
+                  try {
+                    let key = sessionStorage.getItem('adminKey');
+                    if (!key) {
+                      key = window.prompt('Admin API key (set on the server with: wrangler secret put ADMIN_KEY)') || '';
+                    }
+                    if (key) {
+                      sessionStorage.setItem('adminKey', key);
+                      await sendAdminMessage({ adminKey: key, to: msgTargetUser.username, text: msgText });
+                      cloudOk = true;
+                    }
+                  } catch {
+                    /* local copy still saved */
+                  }
+                  showToast(
+                    cloudOk
+                      ? `Message sent to ${msgTargetUser.firstName} (all devices).`
+                      : `Message saved for ${msgTargetUser.firstName} (cloud not configured — set ADMIN_KEY).`
+                  );
                   setMsgTargetUser(null);
                   setMsgText('');
                   setMsgSubject('');

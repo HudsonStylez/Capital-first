@@ -74,4 +74,33 @@ npm run android:apk
   serves them back with the correct content-type.
 - Without KV bound, the app runs **local-only** (no cross-device sync); without R2
   bound, images fall back to per-device IndexedDB.
+
+## Admin → user messaging (cross-device)
+
+Admin messages are stored in **dedicated KV keys** (`msgs:<user>`), so the state
+writer can never clobber them. The user's chat polls every 5s with `no-store` +
+cache-busting, and refreshes on focus/online.
+
+1. **Set an admin key** (only the admin panel sends):
+   ```bash
+   npx wrangler secret put ADMIN_KEY     # paste a long random string
+   ```
+2. In the admin panel, the first time you message a user you'll be prompted for
+   this key (kept in `sessionStorage` only — never in the bundle).
+3. Admin → **Users → Message** (or Support replies) → the message is saved to
+   `msgs:<username>`. The user's device sees it on its next poll (typically <5s,
+   plus KV propagation up to ~60s cross-region).
+
+Endpoints: `GET /api/messages?userId=`, `POST /api/messages/read`,
+`POST /api/admin/message` (header `x-admin-key`).
+
+> For truly instant (WhatsApp-like) updates, move messages to a Durable Object
+> (strong consistency + WebSocket). The polling approach is correct and sufficient
+> for "user sees it on their next check".
+
+## Packaged app (Capacitor APK)
+
+`capacitor.config.json` now sets `server.url` to the hosted site, so **every web
+deploy updates every installed app instantly** — you never rebuild the APK for a
+JS change. Trade-off: the shell needs network on cold start.
 - This is last-write-wins for the shared blob — fine for one admin + a few clients.
