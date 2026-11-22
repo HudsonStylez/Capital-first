@@ -15,8 +15,11 @@ import { buildReceiptHTML } from '../src/lib/receiptTemplate.js';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, x-app-key, x-admin-key',
 };
+
+// Must match src/lib/keys.ts. Stops anonymous scraping of the API.
+const APP_KEY = 'cf-app-7f3a9c2e1b5d4a8';
 
 // Security / trust headers applied to every response. These are the standard
 // signals browsers, scanners, and reviewers look for on a trustworthy site.
@@ -247,10 +250,12 @@ export default {
 
     // --- messaging routes (dedicated KV keys; never the state blob) ---
     if (url.pathname === '/api/messages' && request.method === 'GET') {
+      if (request.headers.get('x-app-key') !== APP_KEY) return mjson({ error: 'unauthorized' }, 401);
       if (!env.BANKING_KV) return mjson({ error: 'KV not configured' }, 503);
       return getMessages(url, env);
     }
     if (url.pathname === '/api/messages/read' && request.method === 'POST') {
+      if (request.headers.get('x-app-key') !== APP_KEY) return mjson({ error: 'unauthorized' }, 401);
       if (!env.BANKING_KV) return mjson({ error: 'KV not configured' }, 503);
       return postRead(request, env);
     }
@@ -311,6 +316,7 @@ export default {
 
     // --- Image upload (R2) + serving ---
     if (url.pathname === '/api/upload' && request.method === 'POST') {
+      if (request.headers.get('x-app-key') !== APP_KEY) return json({ error: 'unauthorized' }, 401);
       if (!env.UPLOADS) {
         return json({ synced: false, error: 'Image storage not configured (UPLOADS/R2 missing)' }, 503);
       }
@@ -328,14 +334,17 @@ export default {
         const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
         const key = `img/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
         await env.UPLOADS.put(key, bytes, { httpMetadata: { contentType: mime } });
-        const imageUrl = new URL(`/api/image/${key}`, request.url).toString();
-        return json({ success: true, key, url: imageUrl });
+        const imgUrl = new URL(`/api/image/${key}`, request.url);
+        imgUrl.searchParams.set('k', APP_KEY);
+        return json({ success: true, key, url: imgUrl.toString() });
       } catch (error) {
         return json({ error: 'Upload failed', details: String(error?.message || error) }, 500);
       }
     }
 
     if (url.pathname.startsWith('/api/image/') && request.method === 'GET') {
+      const okKey = url.searchParams.get('k') === APP_KEY || request.headers.get('x-app-key') === APP_KEY;
+      if (!okKey) return json({ error: 'unauthorized' }, 401);
       if (!env.UPLOADS) return json({ error: 'Image storage not configured' }, 503);
       const key = decodeURIComponent(url.pathname.slice('/api/image/'.length));
       const obj = await env.UPLOADS.get(key);
@@ -349,6 +358,7 @@ export default {
     // --- Shared banking state (cloud sync across devices) ---
     // Requires a KV namespace bound as BANKING_KV (see wrangler.toml).
     if (url.pathname === '/api/state') {
+      if (request.headers.get('x-app-key') !== APP_KEY) return json({ error: 'unauthorized' }, 401);
       if (!env.BANKING_KV) {
         return json({ synced: false, error: 'Cloud sync not configured (BANKING_KV missing)' }, 503);
       }

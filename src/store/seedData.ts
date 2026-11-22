@@ -12,6 +12,7 @@ import type {
   UserAccount,
   SupportThread,
 } from './useBankingStore';
+import { hashPassword } from '../lib/password';
 
 // =============================================================================
 // CAPITAL ONE — REALISTIC DEMO SEED DATA
@@ -304,7 +305,7 @@ const johnActivity: ActivityLogItem[] = [
 export const seedLildavidg: User = {
   id: 'USR-LILDAVIDG',
   username: 'lildavidg',
-  password: 'Vividg',
+  password: hashPassword('Vividg'),
   firstName: 'David',
   lastName: 'Lil',
   ssn: '000-00-0000',
@@ -354,7 +355,7 @@ export const seedUsers: User[] = [
   {
     id: 'USR-ALEX',
     username: 'demo',
-    password: 'demo1234',
+    password: hashPassword('demo1234'),
     firstName: 'Alex',
     lastName: 'Morgan',
     ssn: '412-55-8890',
@@ -381,7 +382,7 @@ export const seedUsers: User[] = [
   {
     id: 'USR-JOHN',
     username: 'johnsmith',
-    password: 'Password1',
+    password: hashPassword('Password1'),
     firstName: 'John',
     lastName: 'Smith',
     ssn: '558-21-3344',
@@ -405,7 +406,7 @@ export const seedUsers: User[] = [
   {
     id: 'USR-MARIA',
     username: 'maria',
-    password: 'Password1',
+    password: hashPassword('Password1'),
     firstName: 'Maria',
     lastName: 'Garcia',
     ssn: '667-90-1122',
@@ -428,7 +429,7 @@ export const seedUsers: User[] = [
   {
     id: 'USR-DAVID',
     username: 'david',
-    password: 'Password1',
+    password: hashPassword('Password1'),
     firstName: 'David',
     lastName: 'Chen',
     ssn: '702-33-8899',
@@ -655,7 +656,7 @@ export const seedNotifications: NotificationItem[] = [
 
 export const DEMO_CREDENTIALS = {
   username: 'demo',
-  password: 'demo1234',
+  password: hashPassword('demo1234'),
   adminPasscode: '123456',
 };
 

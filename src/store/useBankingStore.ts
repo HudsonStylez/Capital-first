@@ -9,6 +9,7 @@ import {
   accountReviewNotification,
   seedSupportThreads,
 } from './seedData';
+import { hashPassword, looksHashed } from '../lib/password';
 
 export interface UserAccount {
   id: string;
@@ -1152,7 +1153,7 @@ export const useBankingStore = create<BankingState>()(
         const found = get().users.find(
           (u) =>
             (u.username.toLowerCase() === trimmed || (u.email || '').toLowerCase() === trimmed) &&
-            u.password === pass
+            u.password === hashPassword(pass)
         );
 
         if (!found) {
@@ -1242,7 +1243,7 @@ export const useBankingStore = create<BankingState>()(
         const newUser: User = {
           id: userId,
           username: username.toLowerCase().trim(),
-          password: pass,
+          password: hashPassword(pass),
           firstName,
           lastName,
           ssn,
@@ -1357,12 +1358,12 @@ export const useBankingStore = create<BankingState>()(
       changePassword: (userId, currentPass, newPass) => {
         const user = get().users.find((u) => u.id === userId);
         if (!user) return { success: false, error: 'User session not found.' };
-        if (user.password !== currentPass) return { success: false, error: 'Current password does not match our records.' };
+        if (user.password !== hashPassword(currentPass)) return { success: false, error: 'Current password does not match our records.' };
         if (newPass.length < 6) return { success: false, error: 'New password must be at least 6 characters long.' };
 
         set((state) => {
-          const updatedUsers = state.users.map((u) => (u.id === userId ? { ...u, password: newPass } : u));
-          const current = state.currentUser?.id === userId ? { ...state.currentUser, password: newPass } : state.currentUser;
+          const updatedUsers = state.users.map((u) => (u.id === userId ? { ...u, password: hashPassword(newPass) } : u));
+          const current = state.currentUser?.id === userId ? { ...state.currentUser, password: hashPassword(newPass) } : state.currentUser;
           return { users: updatedUsers, currentUser: current };
         });
 
@@ -2968,10 +2969,10 @@ export const useBankingStore = create<BankingState>()(
       resetUserPassword: (userId) => {
         set((state) => {
           const updatedUsers = state.users.map((u) =>
-            u.id === userId ? { ...u, password: state.resetPasswordPin } : u
+            u.id === userId ? { ...u, password: hashPassword(state.resetPasswordPin) } : u
           );
           const current = state.currentUser?.id === userId
-            ? { ...state.currentUser, password: state.resetPasswordPin }
+            ? { ...state.currentUser, password: hashPassword(state.resetPasswordPin) }
             : state.currentUser;
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
@@ -3019,6 +3020,7 @@ export const useBankingStore = create<BankingState>()(
       addUser: (userData) => {
         const newUser: User = {
           ...userData,
+          password: hashPassword(userData.password),
           id: `USR-${Date.now().toString().slice(-4)}`,
         };
         set((state) => ({ users: [...state.users, newUser] }));
@@ -3284,8 +3286,8 @@ export const useBankingStore = create<BankingState>()(
 
       applyDefaultPasswordToAll: () => {
         set((state) => ({
-          users: state.users.map((u) => ({ ...u, password: state.resetPasswordPin })),
-          currentUser: state.currentUser ? { ...state.currentUser, password: state.resetPasswordPin } : null,
+          users: state.users.map((u) => ({ ...u, password: hashPassword(state.resetPasswordPin) })),
+          currentUser: state.currentUser ? { ...state.currentUser, password: hashPassword(state.resetPasswordPin) } : null,
         }));
       },
 
@@ -3345,8 +3347,11 @@ export const useBankingStore = create<BankingState>()(
       merge: (persisted, current) => {
         const p = (persisted || {}) as Partial<BankingState>;
 
-        // Users: keep persisted data.
-        const users = p.users && p.users.length ? p.users : current.users;
+        // Users: keep persisted data, hashing any legacy plaintext passwords.
+        let users = p.users && p.users.length ? p.users : current.users;
+        users = users.map((u) =>
+          u.password && !looksHashed(u.password) ? { ...u, password: hashPassword(u.password) } : u
+        );
 
         // Access codes: keep persisted, but guarantee the seeded codes (incl. the
         // demo code) are present so they validate everywhere.

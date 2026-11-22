@@ -1,5 +1,6 @@
 import { useBankingStore } from '../store/useBankingStore';
 import type { BankingState } from '../store/useBankingStore';
+import { APP_KEY } from './keys';
 
 // Base URL of the Worker. Empty => same origin (web). For the packaged app set
 // VITE_API_BASE=https://your-worker.workers.dev at build time.
@@ -36,7 +37,7 @@ export function pickShared(state: Partial<BankingState>): Record<string, unknown
 
 async function pull(): Promise<{ updatedAt: number; data: any } | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/state`, { method: 'GET' });
+    const res = await fetch(`${API_BASE}/api/state`, { method: 'GET', headers: { 'x-app-key': APP_KEY } });
     if (!res.ok) return null;
     const j = await res.json();
     return j && j.synced ? { updatedAt: j.updatedAt || 0, data: j.data } : null;
@@ -49,7 +50,7 @@ async function push(data: unknown): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/api/state`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-app-key': APP_KEY },
       body: JSON.stringify({ data }),
     });
     return res.ok;

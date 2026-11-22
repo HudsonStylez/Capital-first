@@ -16,6 +16,7 @@ import { SmartImage } from '../components/SmartImage';
 import { MessageText } from '../components/MessageText';
 import { deleteImage } from '../lib/imageStore';
 import { sendAdminMessage } from '../lib/messaging';
+import { APP_KEY } from '../lib/keys';
 import {
   Users,
   CreditCard,
@@ -142,7 +143,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   useEffect(() => {
     const base = (import.meta as any).env?.VITE_API_BASE || '';
     let alive = true;
-    fetch(`${base}/api/state`)
+    fetch(`${base}/api/state`, { headers: { 'x-app-key': APP_KEY } })
       .then((r) => {
         if (alive) setCloudStatus(r.ok ? 'on' : 'off');
       })

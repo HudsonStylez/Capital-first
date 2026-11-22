@@ -1,6 +1,8 @@
 // Cross-device admin → user messaging (dedicated KV keys on the Worker).
 // The client polls a small endpoint every 5s with cache-busting + no-store.
 
+import { APP_KEY } from './keys';
+
 const API: string = (import.meta as any).env?.VITE_API_BASE || 'https://capitalone.hudson-ofccl.workers.dev';
 const POLL_MS = 5000;
 
@@ -42,7 +44,7 @@ export function createMessaging(opts: {
     try {
       const res = await fetch(`${API}/api/messages?userId=${encodeURIComponent(userId)}&t=${Date.now()}`, {
         cache: 'no-store',
-        headers: { 'cache-control': 'no-cache' },
+        headers: { 'cache-control': 'no-cache', 'x-app-key': APP_KEY },
       });
       if (!res.ok) return;
       const { messages, read } = await res.json();
@@ -92,7 +94,7 @@ export function createMessaging(opts: {
       try {
         await fetch(`${API}/api/messages/read`, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', 'x-app-key': APP_KEY },
           body: JSON.stringify({ userId, ids }),
         });
         fetchOnce();
@@ -108,7 +110,7 @@ export async function sendAdminMessage(opts: { adminKey: string; to: string; tex
   const id = crypto.randomUUID();
   const res = await fetch(`${API}/api/admin/message`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-admin-key': opts.adminKey },
+    headers: { 'content-type': 'application/json', 'x-app-key': APP_KEY, 'x-admin-key': opts.adminKey },
     body: JSON.stringify({ id, to: opts.to, text: opts.text, from: 'admin' }),
   });
   if (!res.ok) throw new Error(`send failed ${res.status}: ${await res.text()}`);

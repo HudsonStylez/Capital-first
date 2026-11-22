@@ -1,4 +1,5 @@
 import { saveImage } from './imageStore';
+import { APP_KEY } from './keys';
 
 const API_BASE: string = (import.meta as any).env?.VITE_API_BASE || '';
 
@@ -16,7 +17,7 @@ export async function uploadImage(dataUrl: string): Promise<UploadResult> {
   try {
     const res = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-app-key': APP_KEY },
       body: JSON.stringify({ dataUrl }),
     });
     if (res.ok) {
