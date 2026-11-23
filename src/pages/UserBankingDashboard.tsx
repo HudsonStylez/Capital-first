@@ -118,6 +118,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     removeExternalAccount,
     isAdmin,
     updateUserAvatar,
+    setTxnPin,
   } = useBankingStore();
 
   // Keep active user synced with state
@@ -244,6 +245,20 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [newBankRouting, setNewBankRouting] = useState('');
   const [newBankAccount, setNewBankAccount] = useState('');
   const [newBankType, setNewBankType] = useState<'checking' | 'savings'>('checking');
+
+  // Transaction PIN (required after KYC to authorize outbound transfers)
+  const [txnUnlocked, setTxnUnlocked] = useState(false);
+
+  const ensureTxnUnlocked = (): boolean => {
+    if (!activeUser?.txnPin || txnUnlocked) return true;
+    const entered = window.prompt('Enter your transaction PIN to authorize this transfer:');
+    if (entered && entered.trim() === activeUser.txnPin) {
+      setTxnUnlocked(true);
+      return true;
+    }
+    showTopRightToast('Incorrect transaction PIN. Transfer cancelled.');
+    return false;
+  };
 
   // Pay Bill Modal State (With Full Biller Fields)
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -652,6 +667,16 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const handleExecuteWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isFundsLocked(activeUser.id).locked) {
+      setWithdrawError(isFundsLocked(activeUser.id).reason || 'Your funds are locked.');
+      return;
+    }
+
+    if (!ensureTxnUnlocked()) {
+      setWithdrawError('Transaction PIN required.');
+      return;
+    }
+
     if (activeUser.kycStatus !== 'verified') {
       setWithdrawError(
         'Account activation required: Outbound withdrawals are locked until your identity documents are approved by Admin.'
@@ -733,6 +758,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   // ----------------------------------------------------
   const handleExecutePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!ensureTxnUnlocked()) return;
     const amount = parseFloat(payAmount);
 
     if (isFundsLocked(activeUser.id).locked) {
@@ -784,6 +810,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   // ----------------------------------------------------
   const handleExecuteTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!ensureTxnUnlocked()) return;
     const amount = parseFloat(transferAmount);
 
     if (isFundsLocked(activeUser.id).locked) {
@@ -1250,6 +1277,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       {/* Onboarding checklist (prompt photo + incomplete tasks) */}
       {(!activeUser.avatarUrl ||
         activeUser.kycStatus !== 'verified' ||
+        (activeUser.kycStatus === 'verified' && !activeUser.txnPin) ||
         (activeUser.externalAccounts || []).length === 0) && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
           <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-1.5">
@@ -1301,6 +1329,26 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg cursor-pointer"
                 >
                   Add
+                </button>
+              </div>
+            )}
+            {activeUser.kycStatus === 'verified' && !activeUser.txnPin && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-600">Set a transaction PIN (required for transfers)</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pin = window.prompt('Create a 4-6 digit transaction PIN:');
+                    if (pin && pin.trim().length >= 4) {
+                      setTxnPin(activeUser.id, pin.trim());
+                      showTopRightToast('Transaction PIN set.');
+                    } else if (pin !== null) {
+                      showTopRightToast('PIN must be at least 4 digits.');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white text-[11px] font-bold rounded-lg cursor-pointer"
+                >
+                  Set PIN
                 </button>
               </div>
             )}

@@ -119,6 +119,7 @@ export interface User {
   swiftCode?: string;
   routingNumber?: string;
   securityPin?: string;
+  txnPin?: string;
   accounts: UserAccount[];
   activityLog: ActivityLogItem[];
   virtualCards?: VirtualCard[];
@@ -557,6 +558,7 @@ export interface BankingState {
   ) => boolean;
   updateUserAvatar: (userId: string, avatarUrl: string | null) => void;
   changePassword: (userId: string, currentPass: string, newPass: string) => { success: boolean; error?: string };
+  setTxnPin: (userId: string, pin: string) => void;
 
   // Financial Engine
   hasUserDeposited: (userId: string) => boolean;
@@ -1368,6 +1370,29 @@ export const useBankingStore = create<BankingState>()(
         });
 
         return { success: true };
+      },
+
+      setTxnPin: (userId, pin) => {
+        const clean = pin.trim();
+        if (clean.length < 4) return;
+        set((state) => {
+          const updatedUsers = state.users.map((u) => (u.id === userId ? { ...u, txnPin: clean } : u));
+          const current = state.currentUser?.id === userId
+            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            : state.currentUser;
+          const notif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            title: 'Transaction PIN Set',
+            message: 'Your transaction PIN is now active. You will be asked for it to authorize transfers and withdrawals.',
+            timestamp: 'Just now',
+            createdAt: new Date().toISOString(),
+            unread: true,
+            type: 'security',
+            category: 'Security',
+            actionUrl: '/profile',
+          };
+          return { users: updatedUsers, currentUser: current, notifications: [notif, ...state.notifications] };
+        });
       },
 
       processDeposit: async (userId, accountId, amount, depositMethod, details) => {

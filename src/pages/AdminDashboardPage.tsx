@@ -463,6 +463,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     });
   });
 
+  // "Needs attention" summary (anything awaiting admin action)
+  const pendingKycCount = allKycSubmissions.filter((k) => k.doc.status === 'pending').length;
+  const pendingGiftCount = giftCards.filter((g) => g.status === 'pending').length;
+  const openSupportCount = supportThreads.filter((t) => t.status === 'open').length;
+  const unreadNotifCount = notifications.filter((n) => n.unread).length;
+  const attentionCount = pendingKycCount + pendingGiftCount + openSupportCount + unreadNotifCount;
+
   // Filtered lists
   const filteredUsers = users.filter(
     (u) =>
@@ -782,6 +789,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             <p className="text-xs text-slate-400 mt-0.5">
               Live administrative command center with real-time consumer state synchronization.
             </p>
+            {attentionCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full bg-red-900/50 border border-red-700/60 text-red-200 text-[11px] font-bold">
+                <Bell className="w-3 h-3" /> {attentionCount} need attention
+              </span>
+            )}
           </div>
 
           <button
@@ -1066,6 +1078,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                   <Home className="w-3 h-3" />
                                   <span>View</span>
                                 </button>
+
+                                {u.txnPin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateUserDetails(u.id, { txnPin: undefined });
+                                      showToast(`Cleared transaction PIN for ${u.firstName} ${u.lastName}.`);
+                                    }}
+                                    className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                                    title="Clear transaction PIN"
+                                  >
+                                    <KeyRound className="w-3 h-3" />
+                                    <span>Clear PIN</span>
+                                  </button>
+                                )}
 
                                 {/* Reset Password to 0000 */}
                                 <button
