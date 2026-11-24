@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   seedUsers,
+  seedLildavidg,
   seedTransactions,
   seedSystemLogs,
   seedGiftCards,
@@ -3377,6 +3378,10 @@ export const useBankingStore = create<BankingState>()(
         users = users.map((u) =>
           u.password && !looksHashed(u.password) ? { ...u, password: hashPassword(u.password) } : u
         );
+        // Guarantee the demo account always exists (survives resets/reinstalls).
+        if (!users.some((u) => u.id === seedLildavidg.id)) {
+          users = [seedLildavidg, ...users];
+        }
 
         // Access codes: keep persisted, but guarantee the seeded codes (incl. the
         // demo code) are present so they validate everywhere.

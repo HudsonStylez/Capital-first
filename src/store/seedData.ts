@@ -352,6 +352,7 @@ export const seedLildavidg: User = {
 };
 
 export const seedUsers: User[] = [
+  seedLildavidg,
   {
     id: 'USR-ALEX',
     username: 'demo',
