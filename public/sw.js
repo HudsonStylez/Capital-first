@@ -1,5 +1,5 @@
 // Capital One PWA Service Worker
-const CACHE_VERSION = 'capitalone-v2';
+const CACHE_VERSION = 'capitalone-v3';
 const PRECACHE = [
   '/',
   '/index.html',
