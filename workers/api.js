@@ -314,6 +314,19 @@ export default {
       }
     }
 
+    // --- Send a notification email (transaction/deposit/withdrawal/gift card/KYC) ---
+    if (url.pathname === '/api/notify' && request.method === 'POST') {
+      if (request.headers.get('x-app-key') !== APP_KEY) return json({ error: 'unauthorized' }, 401);
+      const body = await request.json().catch(() => null);
+      const to = (body?.to || '').trim();
+      const subject = (body?.subject || 'Capital One').slice(0, 200);
+      const text = (body?.text || '').slice(0, 4000);
+      if (!to || !text) return json({ error: 'to and text required' }, 400);
+      const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1a1a1a;white-space:pre-wrap">${text.replace(/</g, '&lt;')}</div>`;
+      const r = await sendEmail(env, to, subject, html, text);
+      return json({ ok: true, provider: r.provider, id: r.id });
+    }
+
     // --- Image upload (R2) + serving ---
     if (url.pathname === '/api/upload' && request.method === 'POST') {
       if (request.headers.get('x-app-key') !== APP_KEY) return json({ error: 'unauthorized' }, 401);

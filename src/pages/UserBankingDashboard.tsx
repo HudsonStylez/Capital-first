@@ -66,6 +66,7 @@ import { LiveActivityToast } from '../components/LiveActivityToast';
 import { formatTxDate, timeAgo } from '../lib/time';
 import { processImageFile } from '../lib/image';
 import { uploadImage } from '../lib/imageUpload';
+import { sendEmail } from '../lib/notify';
 import { resolveAvatar } from '../lib/avatar';
 import { useNow } from '../hooks/useNow';
 
@@ -523,6 +524,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       const accName = targetAccount ? `${targetAccount.accountType} (${targetAccount.accountNumber})` : 'Account';
 
       showTopRightToast(`Successfully deposited $${amount.toFixed(2)} to ${accName}`);
+      sendEmail(activeUser.email, 'Capital One: Deposit Received', `Your deposit of $${amount.toFixed(2)} to ${accName} has been received and is pending review.`);
       showReceiptForLatest(depositAccountId);
     } catch {
       setIsProcessingDeposit(false);
@@ -616,6 +618,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     );
     setGiftSubmitResult(result);
     showTopRightToast(`Gift card submitted to Admin for review. Ref #${result.reference}`);
+    sendEmail(activeUser.email, 'Capital One: Gift Card Submitted', `Your ${giftCardBrand} gift card ($${(balance || 0).toFixed(2)}) was submitted for review. Ref #${result.reference}.`);
   };
 
   // Read an image file (up to 50 MB), keep high quality, produce a data URL
@@ -746,6 +749,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setIsWithdrawModalOpen(false);
 
       showTopRightToast(`Withdrawal of $${amount.toFixed(2)} to ${withdrawBankName || destinationOpt.name} is complete.`);
+      sendEmail(activeUser.email, 'Capital One: Withdrawal Submitted', `Your withdrawal of $${amount.toFixed(2)} to ${withdrawBankName || destinationOpt.name} has been submitted for review.`);
       showReceiptForLatest(withdrawAccountId);
     } catch {
       setIsProcessingWithdrawal(false);
@@ -798,6 +802,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       setIsPayModalOpen(false);
 
       showTopRightToast(`Successfully posted payment of $${amount.toFixed(2)} to ${billerName}.`);
+      sendEmail(activeUser.email, 'Capital One: Payment Submitted', `Your payment of $${amount.toFixed(2)} to ${billerName} has been submitted for review.`);
       showReceiptForLatest(payAccountId);
     } catch {
       setIsProcessingPayment(false);

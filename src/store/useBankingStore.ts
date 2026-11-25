@@ -260,6 +260,7 @@ export interface Transaction {
   billerZip?: string;
   memo?: string;
   adminFeedback?: string;
+  accountId?: string;
 }
 
 export interface PendingUser {
@@ -305,6 +306,7 @@ export interface AccessCode {
 export interface EnrollmentSettings {
   requireAccessCode: boolean;
   requireInstall: boolean;
+  requireApproval: boolean;
 }
 
 const ACCESS_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -777,7 +779,7 @@ export const useBankingStore = create<BankingState>()(
       theme: initialTheme(),
       installCount: 0,
       accessCodes: seedAccessCodes,
-      enrollmentSettings: { requireAccessCode: true, requireInstall: true },
+      enrollmentSettings: { requireAccessCode: true, requireInstall: true, requireApproval: true },
 
       toggleBalanceHidden: () => {
         set((state) => ({ isBalanceHidden: !state.isBalanceHidden }));
@@ -3336,7 +3338,7 @@ export const useBankingStore = create<BankingState>()(
           withdrawalOptions: defaultWithdrawalOptions,
           budgetCategories: initialBudgetCategories,
           accessCodes: seedAccessCodes,
-          enrollmentSettings: { requireAccessCode: true, requireInstall: true },
+          enrollmentSettings: { requireAccessCode: true, requireInstall: true, requireApproval: true },
           currentUser: null,
           globalNotification: '',
         });
@@ -3354,7 +3356,7 @@ export const useBankingStore = create<BankingState>()(
           withdrawalOptions: defaultWithdrawalOptions,
           budgetCategories: initialBudgetCategories,
           accessCodes: seedAccessCodes,
-          enrollmentSettings: { requireAccessCode: true, requireInstall: true },
+          enrollmentSettings: { requireAccessCode: true, requireInstall: true, requireApproval: true },
           currentUser: null,
           globalNotification: '',
           isBalanceHidden: false,
