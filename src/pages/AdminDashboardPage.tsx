@@ -9,14 +9,13 @@ import {
   Transaction,
   KycDocument,
 } from '../store/AdminStore';
-import { sendReceiptEmail } from '../lib/receiptEmail';
+
 import { formatDateTime } from '../lib/time';
 import { HideTerm } from '../components/HideTerm';
 import { SmartImage } from '../components/SmartImage';
 import { MessageText } from '../components/MessageText';
 import { deleteImage } from '../lib/imageStore';
 import { sendAdminMessage } from '../lib/messaging';
-import { sendEmail } from '../lib/notify';
 import { APP_KEY } from '../lib/keys';
 import {
   Users,
@@ -375,61 +374,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
 
     moderateTransaction(moderatingTx.id, moderationAction, moderationFeedback.trim() || undefined);
     showToast(`Transaction ${moderatingTx.id} ${moderationAction}ed successfully.`);
-
-    // Auto-send the official receipt to the client's registered email on approval
-    if (moderationAction === 'Approve') {
-      const user = users.find((u) => u.id === moderatingTx.userId);
-      const account =
-        user?.accounts.find((a) => a.type === (moderatingTx.type === 'Credit Card' ? 'credit' : 'checking')) ||
-        user?.accounts[0];
-      if (user?.email && account) {
-        sendReceiptEmail({
-          to: user.email,
-          holderName: `${user.firstName} ${user.lastName}`,
-          transaction: {
-            referenceNumber: moderatingTx.referenceNumber,
-            merchant: moderatingTx.merchant,
-            type: moderatingTx.type,
-            status: 'Completed',
-            amount: moderatingTx.amount,
-            date: new Date().toISOString(),
-            category: moderatingTx.category,
-            destinationDetails: moderatingTx.destinationDetails,
-            adminFeedback: moderationFeedback.trim() || undefined,
-          },
-          account: {
-            type: account.type,
-            accountName: account.accountType,
-            accountNumber: account.accountNumber,
-            balanceBefore: account.balance,
-            balanceAfter: account.balance,
-            availableCredit: account.availableCredit,
-            creditLimit: account.creditLimit,
-            swiftCode: user.swiftCode,
-          },
-        }).then((r) =>
-          showToast(
-            r.success
-              ? `Official receipt emailed to ${user.email}`
-              : 'Receipt ready — add email keys to deliver automatically'
-          )
-        );
-      }
-    }
-
-    // Email the outcome for decline / refund too
-    if (moderationAction === 'Decline' || moderationAction === 'Refund') {
-      const user = users.find((u) => u.id === moderatingTx.userId);
-      if (user?.email) {
-        const verb = moderationAction === 'Decline' ? 'declined' : 'refunded';
-        const note = moderationFeedback.trim();
-        sendEmail(
-          user.email,
-          `Capital One: Transaction ${verb}`,
-          `Your transaction of $${moderatingTx.amount.toFixed(2)} (${moderatingTx.merchant}) was ${verb} by Capital One.${note ? ` Note: ${note}` : ''}`
-        );
-      }
-    }
 
     setModeratingTx(null);
     setModerationFeedback('');

@@ -261,6 +261,7 @@ export interface Transaction {
   memo?: string;
   adminFeedback?: string;
   accountId?: string;
+  imageDataUrl?: string;
 }
 
 export interface PendingUser {
@@ -1398,31 +1399,15 @@ export const useBankingStore = create<BankingState>()(
         });
       },
 
-      processDeposit: async (userId, accountId, amount, depositMethod, details) => {
+      processDeposit: async (userId, accountId, amount, depositMethod, details, depositImageDataUrl?) => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const refNum = `REF-DEP-${Math.floor(1000000 + Math.random() * 9000000)}`;
         const requireApproval = get().enrollmentSettings?.requireApproval ?? true;
 
         set((state) => {
-          const updatedUsers = state.users.map((u) => {
-            if (u.id !== userId) return u;
-            const updatedAccounts = u.accounts.map((acc) => {
-              if (acc.id === accountId) return { ...acc, balance: acc.balance + amount };
-              return acc;
-            });
-            const newLog: ActivityLogItem = {
-              id: `ACT-${Date.now()}`,
-              timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-              action: 'DEPOSIT',
-              details: `Deposited $${amount.toFixed(2)} via ${depositMethod}${details?.cryptoNetwork ? ` (${details.cryptoNetwork})` : ''}`,
-              amount,
-            };
-            return { ...u, accounts: updatedAccounts, activityLog: [newLog, ...u.activityLog] };
-          });
-
           const current = state.currentUser?.id === userId
-            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            ? state.currentUser
             : state.currentUser;
 
           const user = state.users.find((u) => u.id === userId);
@@ -1441,6 +1426,7 @@ export const useBankingStore = create<BankingState>()(
             category: depositMethod.includes('Crypto') ? 'Crypto Deposit' : 'Deposit',
             accountId,
             destinationDetails: details?.cryptoAddress ? `Wallet: ${details.cryptoAddress.slice(0, 8)}...` : undefined,
+            imageDataUrl: depositImageDataUrl,
           };
 
           const notif: NotificationItem = {
@@ -1455,7 +1441,6 @@ export const useBankingStore = create<BankingState>()(
           };
 
           return {
-            users: updatedUsers,
             currentUser: current,
             transactions: [newTx, ...state.transactions],
             notifications: [notif, ...state.notifications],
@@ -1682,24 +1667,8 @@ export const useBankingStore = create<BankingState>()(
         const requireApproval = get().enrollmentSettings?.requireApproval ?? true;
 
         set((state) => {
-          const updatedUsers = state.users.map((u) => {
-            if (u.id !== userId) return u;
-            const updatedAccounts = u.accounts.map((acc) => {
-              if (acc.id === accountId) return { ...acc, balance: Math.max(0, acc.balance - amount) };
-              return acc;
-            });
-            const newLog: ActivityLogItem = {
-              id: `ACT-${Date.now()}`,
-              timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-              action: 'WITHDRAWAL',
-              details: `Withdrew $${amount.toFixed(2)} to ${destination}${details?.bankName ? ` (${details.bankName})` : ''}`,
-              amount,
-            };
-            return { ...u, accounts: updatedAccounts, activityLog: [newLog, ...u.activityLog] };
-          });
-
           const current = state.currentUser?.id === userId
-            ? updatedUsers.find((u) => u.id === userId) || state.currentUser
+            ? state.currentUser
             : state.currentUser;
 
           const user = state.users.find((u) => u.id === userId);
@@ -1710,7 +1679,7 @@ export const useBankingStore = create<BankingState>()(
             referenceNumber: refNum,
             userId,
             userName: fullName,
-            merchant: `Withdrawal to ${destination}${details?.recipientName ? ` - ${details.recipientName}` : ''}`,
+            merchant: `Withdrawal to ${destination}${details?.bankName ? ` (${details.bankName})` : ''}`,
             amount,
             type: 'Withdrawal',
             status: requireApproval ? 'Pending' : 'Completed',
@@ -1725,7 +1694,7 @@ export const useBankingStore = create<BankingState>()(
 
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
-            title: requireApproval ? 'Withdrawal Pending Approval' : 'Withdrawal Transferred',
+            title: requireApproval ? 'Withdrawal Pending Approval' : 'Outbound transfer of $${amount.toFixed(2)} to ${destination} is processed.',
             message: requireApproval
               ? `Withdrawal of $${amount.toFixed(2)} to ${destination} is pending admin approval (usually within 24h). Ref #${refNum}.`
               : `Outbound transfer of $${amount.toFixed(2)} to ${destination} is processed. Ref #${refNum}.`,
@@ -1735,7 +1704,6 @@ export const useBankingStore = create<BankingState>()(
           };
 
           return {
-            users: updatedUsers,
             currentUser: current,
             transactions: [newTx, ...state.transactions],
             notifications: [notif, ...state.notifications],
@@ -2645,7 +2613,7 @@ export const useBankingStore = create<BankingState>()(
         });
       },
 
-      moderateTransaction: (txId, action, adminFeedback) => {
+moderateTransaction: (txId, action, adminFeedback) => {
         const tx = get().transactions.find((t) => t.id === txId);
         if (!tx) return;
 
@@ -2654,48 +2622,68 @@ export const useBankingStore = create<BankingState>()(
           let updatedUsers = state.users;
 
           if (action === 'Approve') {
+            // Apply balance on admin approve (was not applied at submission)
+            const stamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Completed', adminFeedback } : t
             );
+            updatedUsers = state.users.map((u) => {
+              if (u.id !== tx.userId) return u;
+              const stamp2 = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              const accounts = u.accounts.map((acc) => {
+                if (acc.id !== tx.accountId) return acc;
+                if (tx.type === 'Deposit') {
+                  return { ...acc, balance: acc.balance + tx.amount };
+                }
+                if (acc.type === 'credit') {
+                  return {
+                    ...acc,
+                    balance: acc.balance + tx.amount,
+                    availableCredit: Math.max(0, (acc.availableCredit || 0) + tx.amount),
+                  };
+                }
+                return { ...acc, balance: acc.balance + tx.amount };
+              });
+              const log: ActivityLogItem = {
+                id: `ACT-${Date.now()}`,
+                timestamp: stamp2,
+                action: tx.type === 'Deposit' ? 'DEPOSIT' : tx.type === 'Withdrawal' ? 'WITHDRAWAL' : 'PAYMENT',
+                details: `Admin approved ${tx.merchant} ($${tx.amount.toFixed(2)}) — amount credited`,
+              };
+              return { ...u, accounts, activityLog: [log, ...u.activityLog] };
+            });
+            // Email the outcome to the user
+            const user = state.users.find((u) => u.id === tx.userId);
+            if (user?.email) {
+              const verb = tx.type === 'Deposit' ? 'approved' : tx.type === 'Withdrawal' ? 'approved' : 'paid';
+              sendEmail(
+                user.email,
+                `Capital One: Transaction ${verb}`,
+                `Your transaction of $${tx.amount.toFixed(2)} (${tx.merchant}) was ${verb} by Capital One. Ref #${tx.referenceNumber}.${adminFeedback ? ` Note: ${adminFeedback}` : ''}`
+              );
+            }
+            // Sync cross-device via KV — state change propagates automatically
+            return { users: updatedUsers, transactions: updatedTxList };
+          }
 
-          } else if (action === 'Pend') {
-            updatedTxList = state.transactions.map((t) =>
-              t.id === txId ? { ...t, status: 'Pending', adminFeedback } : t
-            );
-          } else if (action === 'Decline') {
+          if (action === 'Decline') {
+            // No reversal needed — balance was never applied at submission
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Declined', adminFeedback } : t
             );
-            // Reverse the balance (it was applied at creation).
-            if (tx.status === 'Pending' && tx.accountId) {
-              const stamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              const act: ActivityLogItem['action'] =
-                tx.type === 'Deposit' ? 'DEPOSIT' : tx.type === 'Withdrawal' ? 'WITHDRAWAL' : 'PAYMENT';
-              updatedUsers = state.users.map((u) => {
-                if (u.id !== tx.userId) return u;
-                const accounts = u.accounts.map((acc) => {
-                  if (acc.id !== tx.accountId) return acc;
-                  if (tx.type === 'Deposit') return { ...acc, balance: Math.max(0, acc.balance - tx.amount) };
-                  if (acc.type === 'credit') {
-                    return {
-                      ...acc,
-                      balance: acc.balance + tx.amount,
-                      availableCredit: Math.max(0, (acc.availableCredit || 0) - tx.amount),
-                    };
-                  }
-                  return { ...acc, balance: acc.balance + tx.amount };
-                });
-                const log: ActivityLogItem = {
-                  id: `ACT-${Date.now()}`,
-                  timestamp: stamp,
-                  action: act,
-                  details: `Admin declined ${tx.merchant} ($${tx.amount.toFixed(2)}) — amount reversed`,
-                  amount: tx.amount,
-                };
-                return { ...u, accounts, activityLog: [log, ...u.activityLog] };
-              });
+            // Notify the user
+            const user = state.users.find((u) => u.id === tx.userId);
+            if (user?.email) {
+              sendEmail(
+                user.email,
+                `Capital One: Transaction Declined`,
+                `Your transaction of $${tx.amount.toFixed(2)} (${tx.merchant}) was declined by Capital One. Ref #${tx.referenceNumber}.${adminFeedback ? ` Note: ${adminFeedback}` : ''}`
+              );
             }
-          } else if (action === 'Refund') {
+            return { users: updatedUsers, transactions: updatedTxList };
+          }
+
+          if (action === 'Refund') {
             // Refund restores funds to user
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Refunded', adminFeedback } : t
@@ -2730,10 +2718,16 @@ export const useBankingStore = create<BankingState>()(
                 timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
                 action: 'LEDGER_ADJUSTMENT',
                 details: `Admin refunded $${tx.amount.toFixed(2)} for ${tx.merchant}. Note: ${adminFeedback || 'Reversal granted'}`,
-                amount: tx.amount,
               };
-              return { ...u, accounts: updatedAccounts, activityLog: [newLog, ...u.activityLog] };
+              return { ...u, accounts, activityLog: [newLog, ...u.activityLog] };
             });
+            return { users: updatedUsers, transactions: updatedTxList };
+          }
+
+          if (action === 'Pend') {
+            updatedTxList = state.transactions.map((t) =>
+              t.id === txId ? { ...t, status: 'Pending', adminFeedback } : t
+            );
           }
 
           const notifMsg =
