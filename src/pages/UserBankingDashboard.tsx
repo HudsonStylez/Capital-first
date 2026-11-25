@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   PlusCircle,
   ArrowDownLeft,
+  ArrowRight,
   X,
   Receipt,
   AlertCircle,
@@ -249,6 +250,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
   // Transaction PIN (required after KYC to authorize outbound transfers)
   const [txnUnlocked, setTxnUnlocked] = useState(false);
+  const [showPriorityTasks, setShowPriorityTasks] = useState(false);
 
   const ensureTxnUnlocked = (): boolean => {
     if (!activeUser?.txnPin || txnUnlocked) return true;
@@ -647,7 +649,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
     // 1. Account Activation / Identity Verification Enforcement
     if (activeUser.kycStatus !== 'verified') {
-      setShowWithdrawalRestrictedModal(true);
+      setShowPriorityTasks(true);
       return;
     }
 
@@ -5934,6 +5936,92 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
         checkingBalance={checkingAcc?.balance || 0}
         showToast={showTopRightToast}
       />
+
+      {/* Priority tasks prompt */}
+      {showPriorityTasks && (
+        <div className="fixed inset-0 z-[95] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-5">
+            <h3 className="text-sm font-bold text-slate-900 mb-1">Complete these first</h3>
+            <p className="text-[11px] text-slate-500 mb-3">
+              Finish each step to unlock your account features.
+            </p>
+            <div className="space-y-2">
+              {activeUser.kycStatus !== 'verified' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPriorityTasks(false);
+                    setIsKycModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#005C9D] cursor-pointer text-left"
+                >
+                  <span className="text-xs font-semibold text-slate-800">Verify your identity (KYC)</span>
+                  <ArrowRight className="w-4 h-4 text-[#005C9D]" />
+                </button>
+              )}
+              {activeUser.kycStatus === 'verified' && !activeUser.txnPin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPriorityTasks(false);
+                    const pin = window.prompt('Create a 4-6 digit transaction PIN:');
+                    if (pin && pin.trim().length >= 4) {
+                      setTxnPin(activeUser.id, pin.trim());
+                      showTopRightToast('Transaction PIN set.');
+                    }
+                  }}
+                  className="w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#005C9D] cursor-pointer text-left"
+                >
+                  <span className="text-xs font-semibold text-slate-800">Set a transaction PIN</span>
+                  <ArrowRight className="w-4 h-4 text-[#005C9D]" />
+                </button>
+              )}
+              {(activeUser.externalAccounts || []).length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPriorityTasks(false);
+                    setWithdrawAccountId(checkingAcc?.id || activeUser.accounts[0].id);
+                    setShowAddAccountForm(true);
+                    setIsWithdrawModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#005C9D] cursor-pointer text-left"
+                >
+                  <span className="text-xs font-semibold text-slate-800">Link a bank account</span>
+                  <ArrowRight className="w-4 h-4 text-[#005C9D]" />
+                </button>
+              )}
+              {!activeUser.avatarUrl && (
+                <label className="w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#005C9D] cursor-pointer text-left">
+                  <span className="text-xs font-semibold text-slate-800">Upload your profile photo</span>
+                  <PlusCircle className="w-4 h-4 text-[#005C9D]" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const p = await processImageFile(f, { maxDim: 512, quality: 0.9 });
+                      const up = await uploadImage(p.dataUrl);
+                      updateUserAvatar(activeUser.id, up.url || p.dataUrl);
+                      setShowPriorityTasks(false);
+                      showTopRightToast('Profile photo updated.');
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPriorityTasks(false)}
+              className="mt-3 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg cursor-pointer"
+            >
+              Do it later
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================
           SUPPORT CHAT WIDGET (Floating bottom-left)

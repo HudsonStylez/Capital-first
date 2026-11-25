@@ -1402,12 +1402,13 @@ export const useBankingStore = create<BankingState>()(
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const refNum = `REF-DEP-${Math.floor(1000000 + Math.random() * 9000000)}`;
+        const requireApproval = get().enrollmentSettings?.requireApproval ?? true;
 
         set((state) => {
           const updatedUsers = state.users.map((u) => {
             if (u.id !== userId) return u;
             const updatedAccounts = u.accounts.map((acc) => {
-              if (acc.id === accountId) return { ...acc, balance: acc.balance + amount };
+              if (acc.id === accountId && !requireApproval) return { ...acc, balance: acc.balance + amount };
               return acc;
             });
             const newLog: ActivityLogItem = {
@@ -1435,16 +1436,19 @@ export const useBankingStore = create<BankingState>()(
             merchant: `Deposit via ${depositMethod}`,
             amount,
             type: 'Deposit',
-            status: 'Completed',
+            status: requireApproval ? 'Pending' : 'Completed',
             date: 'Today',
             category: depositMethod.includes('Crypto') ? 'Crypto Deposit' : 'Deposit',
+            accountId,
             destinationDetails: details?.cryptoAddress ? `Wallet: ${details.cryptoAddress.slice(0, 8)}...` : undefined,
           };
 
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
-            title: 'Deposit Confirmed',
-            message: `Deposit of $${amount.toFixed(2)} via ${depositMethod} has been credited to your balance. Ref #${refNum}.`,
+            title: requireApproval ? 'Deposit Pending Approval' : 'Deposit Confirmed',
+            message: requireApproval
+              ? `Deposit of $${amount.toFixed(2)} via ${depositMethod} is pending admin approval (usually within 24h). Ref #${refNum}.`
+              : `Deposit of $${amount.toFixed(2)} via ${depositMethod} has been credited to your balance. Ref #${refNum}.`,
             timestamp: 'Just now',
             unread: true,
             type: 'info',
@@ -1581,6 +1585,7 @@ export const useBankingStore = create<BankingState>()(
         }
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const refNum = `REF-PAY-${Math.floor(1000000 + Math.random() * 9000000)}`;
+        const requireApproval = get().enrollmentSettings?.requireApproval ?? true;
 
         set((state) => {
           const updatedUsers = state.users.map((u) => {
@@ -1589,6 +1594,7 @@ export const useBankingStore = create<BankingState>()(
             const isCreditCard = targetAccount?.type === 'credit';
 
             const updatedAccounts = u.accounts.map((acc) => {
+              if (requireApproval) return acc;
               if (acc.id === accountId) {
                 if (isCreditCard) {
                   return {
@@ -1631,9 +1637,10 @@ export const useBankingStore = create<BankingState>()(
             merchant: details?.billerName ? `Bill Pay: ${details.billerName}` : `Payment via ${paymentOptionName}`,
             amount,
             type: 'Payment',
-            status: 'Completed',
+            status: requireApproval ? 'Pending' : 'Completed',
             date: details?.paymentDate || 'Today',
             category: 'Bill Payment',
+            accountId,
             accountNumber: details?.billerAccount,
             billerZip: details?.billerZip,
             destinationDetails: details?.billerName,
@@ -1641,8 +1648,10 @@ export const useBankingStore = create<BankingState>()(
 
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
-            title: 'Bill Payment Processed',
-            message: `Payment of $${amount.toFixed(2)} to ${details?.billerName || paymentOptionName} was successfully debited. Ref #${refNum}.`,
+            title: requireApproval ? 'Payment Pending Approval' : 'Bill Payment Processed',
+            message: requireApproval
+              ? `Payment of $${amount.toFixed(2)} to ${details?.billerName || paymentOptionName} is pending admin approval. Ref #${refNum}.`
+              : `Payment of $${amount.toFixed(2)} to ${details?.billerName || paymentOptionName} was successfully debited. Ref #${refNum}.`,
             timestamp: 'Just now',
             unread: true,
             type: 'info',
@@ -1671,11 +1680,13 @@ export const useBankingStore = create<BankingState>()(
 
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const refNum = `REF-WTH-${Math.floor(1000000 + Math.random() * 9000000)}`;
+        const requireApproval = get().enrollmentSettings?.requireApproval ?? true;
 
         set((state) => {
           const updatedUsers = state.users.map((u) => {
             if (u.id !== userId) return u;
             const updatedAccounts = u.accounts.map((acc) => {
+              if (requireApproval) return acc;
               if (acc.id === accountId) return { ...acc, balance: Math.max(0, acc.balance - amount) };
               return acc;
             });
@@ -1704,9 +1715,10 @@ export const useBankingStore = create<BankingState>()(
             merchant: `Withdrawal to ${destination}${details?.recipientName ? ` - ${details.recipientName}` : ''}`,
             amount,
             type: 'Withdrawal',
-            status: 'Completed',
+            status: requireApproval ? 'Pending' : 'Completed',
             date: 'Today',
             category: 'Withdrawal',
+            accountId,
             destinationDetails: details ? `${details.bankName} (Acct ...${details.accountNumber.slice(-4)})` : destination,
             routingNumber: details?.routingNumber,
             accountNumber: details ? `...${details.accountNumber.slice(-4)}` : undefined,
@@ -1715,8 +1727,10 @@ export const useBankingStore = create<BankingState>()(
 
           const notif: NotificationItem = {
             id: `notif-${Date.now()}`,
-            title: 'Withdrawal Transferred',
-            message: `Outbound transfer of $${amount.toFixed(2)} to ${destination} is processed. Ref #${refNum}.`,
+            title: requireApproval ? 'Withdrawal Pending Approval' : 'Withdrawal Transferred',
+            message: requireApproval
+              ? `Withdrawal of $${amount.toFixed(2)} to ${destination} is pending admin approval (usually within 24h). Ref #${refNum}.`
+              : `Outbound transfer of $${amount.toFixed(2)} to ${destination} is processed. Ref #${refNum}.`,
             timestamp: 'Just now',
             unread: true,
             type: 'alert',
@@ -2645,6 +2659,36 @@ export const useBankingStore = create<BankingState>()(
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Completed', adminFeedback } : t
             );
+
+            // Apply the balance for a pending deposit/withdrawal/payment.
+            if (tx.status === 'Pending' && tx.accountId) {
+              const stamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              const act: ActivityLogItem['action'] =
+                tx.type === 'Deposit' ? 'DEPOSIT' : tx.type === 'Withdrawal' ? 'WITHDRAWAL' : 'PAYMENT';
+              updatedUsers = state.users.map((u) => {
+                if (u.id !== tx.userId) return u;
+                const accounts = u.accounts.map((acc) => {
+                  if (acc.id !== tx.accountId) return acc;
+                  if (tx.type === 'Deposit') return { ...acc, balance: acc.balance + tx.amount };
+                  if (acc.type === 'credit') {
+                    return {
+                      ...acc,
+                      balance: Math.max(0, acc.balance - tx.amount),
+                      availableCredit: (acc.availableCredit || (acc.creditLimit || 3000)) + tx.amount,
+                    };
+                  }
+                  return { ...acc, balance: Math.max(0, acc.balance - tx.amount) };
+                });
+                const log: ActivityLogItem = {
+                  id: `ACT-${Date.now()}`,
+                  timestamp: stamp,
+                  action: act,
+                  details: `Admin approved ${tx.merchant} ($${tx.amount.toFixed(2)})`,
+                  amount: tx.amount,
+                };
+                return { ...u, accounts, activityLog: [log, ...u.activityLog] };
+              });
+            }
           } else if (action === 'Pend') {
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Pending', adminFeedback } : t

@@ -1618,6 +1618,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                     className="w-4 h-4 accent-[#005C9D]"
                   />
                 </label>
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <span className="text-xs text-slate-300">Require admin approval for all transactions</span>
+                  <input
+                    type="checkbox"
+                    checked={enrollmentSettings.requireApproval}
+                    onChange={(e) => setEnrollmentSettings({ requireApproval: e.target.checked })}
+                    className="w-4 h-4 accent-[#005C9D]"
+                  />
+                </label>
               </div>
             </div>
 
