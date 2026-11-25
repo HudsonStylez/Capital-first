@@ -572,7 +572,8 @@ export interface BankingState {
     accountId: string,
     amount: number,
     depositMethod: string,
-    details?: { cryptoNetwork?: string; cryptoAddress?: string; checkNumber?: string }
+    details?: { cryptoNetwork?: string; cryptoAddress?: string; checkNumber?: string; checkImageDataUrl?: string },
+    depositImageDataUrl?: string
   ) => Promise<boolean>;
 
   processPayment: (

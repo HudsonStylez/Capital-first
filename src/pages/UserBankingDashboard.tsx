@@ -177,12 +177,11 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [depositError, setDepositError] = useState<string | null>(null);
 
   // Gift card submission state
-  const [giftCardBrand, setGiftCardBrand] = useState('Amazon');
+const [giftCardBrand, setGiftCardBrand] = useState('Amazon');
   const [giftCardNumber, setGiftCardNumber] = useState('');
   const [giftCardBalance, setGiftCardBalance] = useState('100.00');
   const [giftCardImageName, setGiftCardImageName] = useState('');
   const [giftImageDataUrl, setGiftImageDataUrl] = useState('');
-  const [depositSlipImageDataUrl, setDepositSlipImageDataUrl] = useState('');
   const [giftScratchCode, setGiftScratchCode] = useState('');
   const [giftPurpose, setGiftPurpose] = useState<'Deposit' | 'Payment' | 'Transfer'>('Deposit');
   const [giftTargetAccountId, setGiftTargetAccountId] = useState('');
@@ -519,7 +518,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
         amount,
         isCrypto ? `Crypto Deposit (${cryptoNetwork})` : depositMethod,
         isCrypto ? { cryptoNetwork: selectedCrypto.network, cryptoAddress: selectedCrypto.address } : undefined,
-        isCrypto ? undefined : depositSlipImageDataUrl
+        depositSlipImageDataUrl
       );
 
       setIsProcessingDeposit(false);
@@ -529,7 +528,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       const accName = targetAccount ? `${targetAccount.accountType} (${targetAccount.accountNumber})` : 'Account';
 
       showTopRightToast(`Successfully deposited $${amount.toFixed(2)} to ${accName}`);
-      if (requireApproval) {
+      if (enrollmentSettings?.requireApproval) {
         showTopRightToast('Deposit pending admin approval — balance applies after approval.');
       }
       showReceiptForLatest(depositAccountId);
