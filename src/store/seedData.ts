@@ -524,50 +524,7 @@ export const seedSystemLogs: SystemLog[] = [
 // -----------------------------------------------------------------------------
 // Gift cards
 // -----------------------------------------------------------------------------
-export const seedGiftCards: GiftCard[] = [
-  {
-    id: 'gift-1',
-    userId: 'USR-ALEX',
-    cardName: 'Amazon Gift Card',
-    cardNumber: '6006 4821 9930 1123',
-    last4: '1123',
-    originalBalance: 500,
-    remainingBalance: 500,
-    usdConversionRate: 0.85,
-    convertedAmount: 425,
-    status: 'pending',
-    createdAt: iso(1, 12, 0),
-  },
-  {
-    id: 'gift-2',
-    userId: 'USR-ALEX',
-    cardName: 'Apple Gift Card',
-    cardNumber: '6006 7712 3345 8890',
-    last4: '8890',
-    originalBalance: 250,
-    remainingBalance: 250,
-    usdConversionRate: 0.9,
-    convertedAmount: 225,
-    status: 'approved',
-    createdAt: iso(3, 12, 0),
-    approvedAt: iso(2, 10, 0),
-  },
-  {
-    id: 'gift-3',
-    userId: 'USR-JOHN',
-    cardName: 'Walmart Gift Card',
-    cardNumber: '6006 1123 9987 2210',
-    last4: '2210',
-    originalBalance: 150,
-    remainingBalance: 0,
-    usdConversionRate: 0.8,
-    convertedAmount: 120,
-    status: 'redeemed',
-    createdAt: iso(10, 12, 0),
-    approvedAt: iso(9, 10, 0),
-    redeemedAt: iso(8, 10, 0),
-  },
-];
+export const seedGiftCards: GiftCard[] = [];
 
 // -----------------------------------------------------------------------------
 // Notifications

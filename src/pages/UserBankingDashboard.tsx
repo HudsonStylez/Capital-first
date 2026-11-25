@@ -610,7 +610,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       giftTargetDetails.trim() || undefined,
       giftCardImageName,
       giftScratchCode.trim(),
-      undefined,
+      giftImageDataUrl || undefined,
       imageKey,
       imageUrl
     );
@@ -913,6 +913,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       fileSize: kycIdFrontImage ? 'HD (uploaded)' : '3.4 MB',
       imageKey: idKey,
       imageUrl: idUrl,
+      imageDataUrl: kycIdFrontImage || undefined,
     };
 
     const doc2 = {
@@ -922,6 +923,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       fileSize: kycUtilityImage ? 'HD (uploaded)' : '1.8 MB',
       imageKey: utilKey,
       imageUrl: utilUrl,
+      imageDataUrl: kycUtilityImage || undefined,
     };
 
     setTimeout(() => {
