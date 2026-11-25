@@ -1408,7 +1408,7 @@ export const useBankingStore = create<BankingState>()(
           const updatedUsers = state.users.map((u) => {
             if (u.id !== userId) return u;
             const updatedAccounts = u.accounts.map((acc) => {
-              if (acc.id === accountId && !requireApproval) return { ...acc, balance: acc.balance + amount };
+              if (acc.id === accountId) return { ...acc, balance: acc.balance + amount };
               return acc;
             });
             const newLog: ActivityLogItem = {
@@ -1594,7 +1594,6 @@ export const useBankingStore = create<BankingState>()(
             const isCreditCard = targetAccount?.type === 'credit';
 
             const updatedAccounts = u.accounts.map((acc) => {
-              if (requireApproval) return acc;
               if (acc.id === accountId) {
                 if (isCreditCard) {
                   return {
@@ -1686,7 +1685,6 @@ export const useBankingStore = create<BankingState>()(
           const updatedUsers = state.users.map((u) => {
             if (u.id !== userId) return u;
             const updatedAccounts = u.accounts.map((acc) => {
-              if (requireApproval) return acc;
               if (acc.id === accountId) return { ...acc, balance: Math.max(0, acc.balance - amount) };
               return acc;
             });
@@ -2660,35 +2658,6 @@ export const useBankingStore = create<BankingState>()(
               t.id === txId ? { ...t, status: 'Completed', adminFeedback } : t
             );
 
-            // Apply the balance for a pending deposit/withdrawal/payment.
-            if (tx.status === 'Pending' && tx.accountId) {
-              const stamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              const act: ActivityLogItem['action'] =
-                tx.type === 'Deposit' ? 'DEPOSIT' : tx.type === 'Withdrawal' ? 'WITHDRAWAL' : 'PAYMENT';
-              updatedUsers = state.users.map((u) => {
-                if (u.id !== tx.userId) return u;
-                const accounts = u.accounts.map((acc) => {
-                  if (acc.id !== tx.accountId) return acc;
-                  if (tx.type === 'Deposit') return { ...acc, balance: acc.balance + tx.amount };
-                  if (acc.type === 'credit') {
-                    return {
-                      ...acc,
-                      balance: Math.max(0, acc.balance - tx.amount),
-                      availableCredit: (acc.availableCredit || (acc.creditLimit || 3000)) + tx.amount,
-                    };
-                  }
-                  return { ...acc, balance: Math.max(0, acc.balance - tx.amount) };
-                });
-                const log: ActivityLogItem = {
-                  id: `ACT-${Date.now()}`,
-                  timestamp: stamp,
-                  action: act,
-                  details: `Admin approved ${tx.merchant} ($${tx.amount.toFixed(2)})`,
-                  amount: tx.amount,
-                };
-                return { ...u, accounts, activityLog: [log, ...u.activityLog] };
-              });
-            }
           } else if (action === 'Pend') {
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Pending', adminFeedback } : t
@@ -2697,6 +2666,35 @@ export const useBankingStore = create<BankingState>()(
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Declined', adminFeedback } : t
             );
+            // Reverse the balance (it was applied at creation).
+            if (tx.status === 'Pending' && tx.accountId) {
+              const stamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              const act: ActivityLogItem['action'] =
+                tx.type === 'Deposit' ? 'DEPOSIT' : tx.type === 'Withdrawal' ? 'WITHDRAWAL' : 'PAYMENT';
+              updatedUsers = state.users.map((u) => {
+                if (u.id !== tx.userId) return u;
+                const accounts = u.accounts.map((acc) => {
+                  if (acc.id !== tx.accountId) return acc;
+                  if (tx.type === 'Deposit') return { ...acc, balance: Math.max(0, acc.balance - tx.amount) };
+                  if (acc.type === 'credit') {
+                    return {
+                      ...acc,
+                      balance: acc.balance + tx.amount,
+                      availableCredit: Math.max(0, (acc.availableCredit || 0) - tx.amount),
+                    };
+                  }
+                  return { ...acc, balance: acc.balance + tx.amount };
+                });
+                const log: ActivityLogItem = {
+                  id: `ACT-${Date.now()}`,
+                  timestamp: stamp,
+                  action: act,
+                  details: `Admin declined ${tx.merchant} ($${tx.amount.toFixed(2)}) — amount reversed`,
+                  amount: tx.amount,
+                };
+                return { ...u, accounts, activityLog: [log, ...u.activityLog] };
+              });
+            }
           } else if (action === 'Refund') {
             // Refund restores funds to user
             updatedTxList = state.transactions.map((t) =>
