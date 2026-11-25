@@ -27,6 +27,7 @@ import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { ShareButton } from './components/ShareButton';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { InstallGate } from './components/InstallGate';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { TransactionReceipt } from './components/TransactionReceipt';
 
 // Dedicated simulation routes
@@ -437,7 +438,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AdminStoreProvider>
-        <AppContent />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
       </AdminStoreProvider>
     </QueryClientProvider>
   );
