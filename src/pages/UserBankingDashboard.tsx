@@ -121,6 +121,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     isAdmin,
     updateUserAvatar,
     setTxnPin,
+    enrollmentSettings,
   } = useBankingStore();
 
   // Keep active user synced with state
@@ -181,6 +182,7 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [giftCardBalance, setGiftCardBalance] = useState('100.00');
   const [giftCardImageName, setGiftCardImageName] = useState('');
   const [giftImageDataUrl, setGiftImageDataUrl] = useState('');
+  const [depositSlipImageDataUrl, setDepositSlipImageDataUrl] = useState('');
   const [giftScratchCode, setGiftScratchCode] = useState('');
   const [giftPurpose, setGiftPurpose] = useState<'Deposit' | 'Payment' | 'Transfer'>('Deposit');
   const [giftTargetAccountId, setGiftTargetAccountId] = useState('');
@@ -516,7 +518,8 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
         depositAccountId,
         amount,
         isCrypto ? `Crypto Deposit (${cryptoNetwork})` : depositMethod,
-        isCrypto ? { cryptoNetwork: selectedCrypto.network, cryptoAddress: selectedCrypto.address } : undefined
+        isCrypto ? { cryptoNetwork: selectedCrypto.network, cryptoAddress: selectedCrypto.address } : undefined,
+        isCrypto ? undefined : depositSlipImageDataUrl
       );
 
       setIsProcessingDeposit(false);
@@ -526,7 +529,9 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
       const accName = targetAccount ? `${targetAccount.accountType} (${targetAccount.accountNumber})` : 'Account';
 
       showTopRightToast(`Successfully deposited $${amount.toFixed(2)} to ${accName}`);
-      sendEmail(activeUser.email, 'Capital One: Deposit Received', `Your deposit of $${amount.toFixed(2)} to ${accName} has been received and is pending review.`);
+      if (requireApproval) {
+        showTopRightToast('Deposit pending admin approval — balance applies after approval.');
+      }
       showReceiptForLatest(depositAccountId);
     } catch {
       setIsProcessingDeposit(false);
@@ -630,6 +635,18 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
     try {
       const processed = await processImageFile(file, { maxDim: 1280, quality: 0.82 });
       setGiftImageDataUrl(processed.dataUrl);
+      setDepositError(null);
+    } catch (err) {
+      setDepositError(err instanceof Error ? err.message : 'Could not read the image.');
+    }
+  };
+
+  const handleDepositImageChange = async (file: File | undefined) => {
+    if (!file) return;
+    setDepositScratchCode(file.name);
+    try {
+      const processed = await processImageFile(file, { maxDim: 1280, quality: 0.82 });
+      setDepositSlipImageDataUrl(processed.dataUrl);
       setDepositError(null);
     } catch (err) {
       setDepositError(err instanceof Error ? err.message : 'Could not read the image.');
@@ -3408,35 +3425,56 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
                     </div>
 
                     {depositMethod === 'Mobile Check Deposit' && (
-                      <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                        <button
-                          type="button"
-                          onClick={() => setCheckFrontCaptured(!checkFrontCaptured)}
-                          className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                            checkFrontCaptured
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                              : 'border-dashed border-slate-300 bg-white text-slate-600'
-                          }`}
-                        >
-                          <Camera className="w-5 h-5 mx-auto mb-1" />
-                          <span className="text-[11px] font-bold block">
-                            {checkFrontCaptured ? 'Front Captured ✓' : 'Front of Check'}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Check / Deposit Slip Image <span className="text-[#DA291C]">*</span> (required)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="flex flex-col items-center justify-center gap-1 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-slate-600 cursor-pointer hover:border-[#005C9D] text-center">
+                            <Camera className="w-4 h-4" />
+                            <span className="text-[10px] font-bold">Take Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="hidden"
+                              onChange={(e) => handleDepositImageChange(e.target.files?.[0])}
+                            />
+                          </label>
+                          <label className="flex flex-col items-center justify-center gap-1 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-slate-600 cursor-pointer hover:border-[#005C9D] text-center">
+                            <Camera className="w-4 h-4" />
+                            <span className="text-[10px] font-bold">Upload Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleDepositImageChange(e.target.files?.[0])}
+                            />
+                          </label>
+                        </div>
+                        {depositSlipImageDataUrl ? (
+                          <div className="mt-2 relative rounded-xl overflow-hidden border border-emerald-300">
+                            <img src={depositSlipImageDataUrl} alt="Check / deposit slip preview" className="w-full max-h-40 object-contain bg-slate-50" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDepositSlipImageDataUrl('');
+                                setDepositScratchCode('');
+                              }}
+                              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 cursor-pointer"
+                              aria-label="Remove image"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold text-emerald-700 bg-white/90 px-1.5 py-0.5 rounded">
+                              {depositScratchCode || 'Attached'} ✓
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 mt-1 block">
+                            A clear photo of the check front/back or deposit slip is required for Mobile Check Deposit.
                           </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCheckBackCaptured(!checkBackCaptured)}
-                          className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                            checkBackCaptured
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                              : 'border-dashed border-slate-300 bg-white text-slate-600'
-                          }`}
-                        >
-                          <Camera className="w-5 h-5 mx-auto mb-1" />
-                          <span className="text-[11px] font-bold block">
-                            {checkBackCaptured ? 'Back Captured ✓' : 'Back of Check'}
-                          </span>
-                        </button>
+                        )}
                       </div>
                     )}
                   </>
