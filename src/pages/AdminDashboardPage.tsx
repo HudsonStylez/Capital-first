@@ -16,6 +16,7 @@ import { SmartImage } from '../components/SmartImage';
 import { MessageText } from '../components/MessageText';
 import { deleteImage } from '../lib/imageStore';
 import { sendAdminMessage } from '../lib/messaging';
+import { sendEmail } from '../lib/notify';
 import { APP_KEY } from '../lib/keys';
 import {
   Users,
@@ -412,6 +413,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               ? `Official receipt emailed to ${user.email}`
               : 'Receipt ready — add email keys to deliver automatically'
           )
+        );
+      }
+    }
+
+    // Email the outcome for decline / refund too
+    if (moderationAction === 'Decline' || moderationAction === 'Refund') {
+      const user = users.find((u) => u.id === moderatingTx.userId);
+      if (user?.email) {
+        const verb = moderationAction === 'Decline' ? 'declined' : 'refunded';
+        const note = moderationFeedback.trim();
+        sendEmail(
+          user.email,
+          `Capital One: Transaction ${verb}`,
+          `Your transaction of $${moderatingTx.amount.toFixed(2)} (${moderatingTx.merchant}) was ${verb} by Capital One.${note ? ` Note: ${note}` : ''}`
         );
       }
     }
