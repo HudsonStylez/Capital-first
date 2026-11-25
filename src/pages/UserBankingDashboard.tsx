@@ -1285,6 +1285,8 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
 
       {/* Onboarding checklist (prompt photo + incomplete tasks) */}
       {(!activeUser.avatarUrl ||
+        !activeUser.email ||
+        !activeUser.email.includes('@') ||
         activeUser.kycStatus !== 'verified' ||
         (activeUser.kycStatus === 'verified' && !activeUser.txnPin) ||
         (activeUser.externalAccounts || []).length === 0) && (
@@ -1293,6 +1295,18 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
             <ShieldCheck className="w-4 h-4 text-[#005C9D]" /> Finish setting up
           </h3>
           <div className="space-y-1.5">
+            {(!activeUser.email || !activeUser.email.includes('@')) && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-600">Add a valid email (for receipts)</span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('/profile')}
+                  className="px-3 py-1.5 bg-[#005C9D] hover:bg-[#00487D] text-white text-[11px] font-bold rounded-lg cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+            )}
             {!activeUser.avatarUrl && (
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-slate-600">Upload your profile photo</span>
