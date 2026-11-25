@@ -10,6 +10,7 @@ import {
   KycDocument,
 } from '../store/AdminStore';
 
+import { sendReceiptEmail } from '../lib/receiptEmail';
 import { formatDateTime } from '../lib/time';
 import { HideTerm } from '../components/HideTerm';
 import { SmartImage } from '../components/SmartImage';
@@ -2172,7 +2173,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                                         creditLimit: acct2.creditLimit,
                                         swiftCode: owner2.swiftCode,
                                       },
-                                    }).then((r) => r.success && showToast(`Receipt emailed to ${owner2.email}`));
+                                      }).then((r: { success: boolean }) => r.success && showToast(`Receipt emailed to ${owner2.email}`));
                                   }
                                 }
                               }}

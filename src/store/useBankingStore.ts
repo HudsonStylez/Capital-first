@@ -11,6 +11,7 @@ import {
   seedSupportThreads,
 } from './seedData';
 import { hashPassword, looksHashed } from '../lib/password';
+import { sendEmail } from '../lib/notify';
 
 export interface UserAccount {
   id: string;
@@ -1399,7 +1400,7 @@ export const useBankingStore = create<BankingState>()(
         });
       },
 
-      processDeposit: async (userId, accountId, amount, depositMethod, details, depositImageDataUrl?) => {
+      processDeposit: async (userId: string, accountId: string, amount: number, depositMethod: string, details?: any, depositImageDataUrl?: string) => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const refNum = `REF-DEP-${Math.floor(1000000 + Math.random() * 9000000)}`;
@@ -2663,10 +2664,7 @@ moderateTransaction: (txId, action, adminFeedback) => {
               );
             }
             // Sync cross-device via KV — state change propagates automatically
-            return { users: updatedUsers, transactions: updatedTxList };
-          }
-
-          if (action === 'Decline') {
+          } else if (action === 'Decline') {
             // No reversal needed — balance was never applied at submission
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Declined', adminFeedback } : t
@@ -2680,10 +2678,7 @@ moderateTransaction: (txId, action, adminFeedback) => {
                 `Your transaction of $${tx.amount.toFixed(2)} (${tx.merchant}) was declined by Capital One. Ref #${tx.referenceNumber}.${adminFeedback ? ` Note: ${adminFeedback}` : ''}`
               );
             }
-            return { users: updatedUsers, transactions: updatedTxList };
-          }
-
-          if (action === 'Refund') {
+          } else if (action === 'Refund') {
             // Refund restores funds to user
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Refunded', adminFeedback } : t
@@ -2719,12 +2714,9 @@ moderateTransaction: (txId, action, adminFeedback) => {
                 action: 'LEDGER_ADJUSTMENT',
                 details: `Admin refunded $${tx.amount.toFixed(2)} for ${tx.merchant}. Note: ${adminFeedback || 'Reversal granted'}`,
               };
-              return { ...u, accounts, activityLog: [newLog, ...u.activityLog] };
+              return { ...u, accounts: updatedAccounts, activityLog: [newLog, ...u.activityLog] };
             });
-            return { users: updatedUsers, transactions: updatedTxList };
-          }
-
-          if (action === 'Pend') {
+          } else if (action === 'Pend') {
             updatedTxList = state.transactions.map((t) =>
               t.id === txId ? { ...t, status: 'Pending', adminFeedback } : t
             );
