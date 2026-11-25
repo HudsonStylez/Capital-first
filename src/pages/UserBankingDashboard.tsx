@@ -177,12 +177,14 @@ export const UserBankingDashboard: React.FC<UserBankingDashboardProps> = ({ onNa
   const [depositError, setDepositError] = useState<string | null>(null);
 
   // Gift card submission state
-const [giftCardBrand, setGiftCardBrand] = useState('Amazon');
+  const [giftCardBrand, setGiftCardBrand] = useState('Amazon');
   const [giftCardNumber, setGiftCardNumber] = useState('');
   const [giftCardBalance, setGiftCardBalance] = useState('100.00');
   const [giftCardImageName, setGiftCardImageName] = useState('');
   const [giftImageDataUrl, setGiftImageDataUrl] = useState('');
   const [giftScratchCode, setGiftScratchCode] = useState('');
+  const [depositSlipImageDataUrl, setDepositSlipImageDataUrl] = useState('');
+  const [depositScratchCode, setDepositScratchCode] = useState('');
   const [giftPurpose, setGiftPurpose] = useState<'Deposit' | 'Payment' | 'Transfer'>('Deposit');
   const [giftTargetAccountId, setGiftTargetAccountId] = useState('');
   const [giftTargetDetails, setGiftTargetDetails] = useState('');
