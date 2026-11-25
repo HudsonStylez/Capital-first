@@ -29,9 +29,6 @@ binding = "BANKING_KV"
 id = "66d6c31fcee74203ac478c3904d1cef1"
 
 # Cloudflare R2 bucket for uploaded images (cross-device image access).
-# 1) Create it (free):
-#      npx wrangler r2 bucket create capitalone-uploads
-# 2) Uncomment and set the bucket_name.
-# [[r2_buckets]]
-# binding = "UPLOADS"
-# bucket_name = "capitalone-uploads"
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "capitalone-uploads"
